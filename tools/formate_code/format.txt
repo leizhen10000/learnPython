@@ -1,0 +1,15 @@
+Assert.assertEquals(orderInfo.get("orderId").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("riderId").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("extraFee").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("extraFeeDisplay").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("customerTel").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("address").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("platformDesc").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("orderStatus").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("riderTel").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("distance").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("superiorShowed").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("orderStatusCn").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("sinceOrdered").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("isAddExtraFee").toString(), "百度渠道");
+Assert.assertEquals(orderInfo.get("serialId").toString(), "百度渠道");
