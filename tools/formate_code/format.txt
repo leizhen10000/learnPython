@@ -1,15 +1,41 @@
-Assert.assertEquals(orderInfo.get("orderId").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("riderId").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("extraFee").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("extraFeeDisplay").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("customerTel").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("address").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("platformDesc").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("orderStatus").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("riderTel").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("distance").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("superiorShowed").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("orderStatusCn").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("sinceOrdered").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("isAddExtraFee").toString(), "百度渠道");
-Assert.assertEquals(orderInfo.get("serialId").toString(), "百度渠道");
+public class ObtainGood {
+
+	// 读取配置文件
+	private Attribute attribute = SystemConstants.getAttribute();
+
+	@DataProvider(name = "ObtainGoodData")
+	public Iterator<Object[]> dataFortestMethod(Method method) throws IOException {
+		return new ExcelDataProvider("/${pathName}/ObtainGoodData");
+	}
+
+	@Test(dataProvider = "ObtainGoodData")
+	public void testObtainGood(Map<String, String> data) throws IOException {
+		//dosomething
+	}
+
+	public void obtainGoodRequest(String orderStandardCategory, String monthlyExpense, String balance, String frozenProvision, String blockedFund,  String token){
+		RestAssured.baseURI="http://" + attribute.getRiderHost() + ":" + attribute.getRiderPort();
+		String url="/" + attribute.getRiderVersion() + "/rider/obtain-good.json";
+		Map<String,String> param = new HashMap<String, String>();
+		param.put("orderStandardCategory",orderStandardCategory);
+		param.put("monthlyExpense",monthlyExpense);
+		param.put("balance",balance);
+		param.put("frozenProvision",frozenProvision);
+		param.put("blockedFund",blockedFund);
+		param.put("token",token);
+		String sign= SignUtils.getSign(param);
+		param.put("sign",sign);
+
+		Response response=given().params(param).when().get(url)
+		logger.info(">>>>> ObtainGood params       ：" + param);
+		logger.info(">>>>> ObtainGood response    ：" + response.asString());
+		return response;
+	}
+		//验证response
+
+	public void checkObtainGoodSuccess(Response obtainGoodResponse,Map<String,String> data}) {
+		obtainGoodResponse.
+			then().
+			assertThat().statusCode(200).
+			body("status",equalTo("${something}"));
+	}

@@ -30,7 +30,7 @@ class ReadAndWriteFile(object):
     def read_file(self):
         f = open(self._file_abs, "r")
         try:
-            print f.read()
+            print f.read().decode("gbk")
         finally:
             if f:
                 f.close()
@@ -42,10 +42,11 @@ class ReadAndWriteFile(object):
             print i.decode("gbk")
 
     def write_file(self):
-        with open(self._file_abs, "w") as f:
+        with open(self._file_abs, "a") as f:
             f.write("Hello World!")
 
 
 if __name__ == '__main__':
+    # ReadAndWriteFile().read_file()
     # ReadAndWriteFile().write_file()
     ReadAndWriteFile().simple_read_file()
