@@ -1,40 +1,36 @@
-public class ObtainGood {
+public class GetOrder {
 
 	// 读取配置文件
 	private Attribute attribute = SystemConstants.getAttribute();
 
-	@DataProvider(name = "ObtainGoodData")
+	@DataProvider(name = "GetOrderData")
 	public Iterator<Object[]> dataFortestMethod(Method method) throws IOException {
-		return new ExcelDataProvider("/${pathName}/ObtainGoodData");
+		return new ExcelDataProvider("/${pathName}/GetOrderDataProvider");
 	}
 
-	@Test(dataProvider = "ObtainGoodData")
-	public void testObtainGood(Map<String, String> data) throws IOException {
-		//dosomething
+	@Test(dataProviderClass = ${dataProviderClassName},dataProvider = "GetOrderData")
+	public void testGetOrder(Map<String, String> data) throws IOException {
+		//doSomething
 	}
 
-	public void obtainGoodRequest(String orderStandardCategory, String monthlyExpense, String balance, String frozenProvision, String blockedFund,  String token){
+	public void getOrderRequest(String orderOriginalId){
 		RestAssured.baseURI="http://" + attribute.getRiderHost() + ":" + attribute.getRiderPort();
-		String url="/" + attribute.getRiderVersion() + "/rider/obtain-good.json";
+		String url="/" + attribute.getRiderVersion() + "/api/eleme/order/get-order.json";
 		Map<String,String> param = new HashMap<String, String>();
-		param.put("orderStandardCategory",orderStandardCategory);
-		param.put("monthlyExpense",monthlyExpense);
-		param.put("balance",balance);
-		param.put("frozenProvision",frozenProvision);
-		param.put("blockedFund",blockedFund);
+		param.put("orderOriginalId",orderOriginalId);
 		param.put("token",token);
 		String sign= SignUtils.getSign(param);
 		param.put("sign",sign);
 
-		Response response=given().params(param).when().get(url)
-		logger.info(">>>>> ObtainGood params       ：" + param);
-		logger.info(">>>>> ObtainGood response    ：" + response.asString());
+		Response response=given().params(param).when().post(url)
+		logger.info(">>>>> GetOrder params       ：" + param);
+		logger.info(">>>>> GetOrder response    ：" + response.asString());
 		return response;
 	}
-		//验证response
 
-	public void checkObtainGoodSuccess(Response obtainGoodResponse,Map<String,String> data}) {
-		obtainGoodResponse.
+	//验证response
+	public void checkGetOrderSuccess(Response getOrderResponse,Map<String,String> data}) {
+		getOrderResponse.
 			then().
 			assertThat().statusCode(200).
 			body("status",equalTo("${something}"));

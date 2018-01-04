@@ -27,61 +27,83 @@ import re
 class FormatCode(object):
     def __init__(self, info):
         self._info = info
+        self._result_list = []
+        self._class_name = ''
+        self._method_name = ''
+        self._param_list = key_list(info['params'])
 
     def format_code(self):
-        result_list = []
         url = self._info.get('url', 'NoName')
-        class_name = split_url_2_class_name(url=url)
-        if class_name is None:
-            class_name = '${NoName}'
-        method_name = class_name[0:1].lower() + class_name[1:]
-        print class_name
-        result_list.append('public class %s {\n' % class_name)
-        result_list.append('\n\t// 读取配置文件\n')
-        result_list.append('\tprivate Attribute attribute = SystemConstants.getAttribute();\n')
-        result_list.append('\n\t@DataProvider(name = "%sData")' % class_name)
-        result_list.append(
+        self._class_name = split_url_2_class_name(url=url)
+        if self._class_name is None:
+            self._class_name = '${NoName}'
+        self._method_name = self._class_name[0:1].lower() + self._class_name[1:]
+
+        # 定义 class 格式
+        self._result_list.append('public class %s {\n' % self._class_name)
+        self._result_list.append('\n\t// 读取配置文件\n')
+        self._result_list.append('\tprivate Attribute attribute = SystemConstants.getAttribute();\n')
+        # 定义 data provider 方法
+        self._result_list.append('\n\t@DataProvider(name = "%sData")' % self._class_name)
+        self._result_list.append(
             '\n\tpublic Iterator<Object[]> dataFortestMethod(Method method) throws IOException {\n'
-            '\t\treturn new ExcelDataProvider("/${pathName}/%sData");\n'
-            '\t}\n' % class_name)
-        result_list.append('\n\t@Test(dataProvider = "%sData")\n' % class_name)
-        result_list.append('\tpublic void test%s(Map<String, String> data) throws IOException {\n' % class_name)
-        result_list.append('\t\t//dosomething\n'
-                           '\t}\n')
-        param_list = key_list(info['params'])
-        param_string = ''
-        for param in param_list:
-            param_string += 'String %s, ' % param
-        result_list.append('\n\tpublic void %sRequest(%s String token){\n' % (method_name, param_string))
-        result_list.append(
+            '\t\treturn new ExcelDataProvider("/${pathName}/%sDataProvider");\n'
+            '\t}\n' % self._class_name)
+        self._result_list.append(
+            '\n\t@Test(dataProviderClass = ${dataProviderClassName},dataProvider = "%sData")\n' % self._class_name)
+        self._result_list.append(
+            '\tpublic void test%s(Map<String, String> data) throws IOException {\n' % self._class_name)
+        self._result_list.append('\t\t//doSomething\n'
+                                 '\t}\n')
+        # 定义 发起请求的方法
+        self.request_method(has_token=True)
+        self._result_list.append(
             '\t\tRestAssured.baseURI="http://" + attribute.getRiderHost() + ":" + attribute.getRiderPort();\n')
-        result_list.append('\t\tString url="/" + attribute.getRiderVersion() + "%s";\n' % url)
-        result_list.append('\t\tMap<String,String> param = new HashMap<String, String>();\n')
-        for param in param_list:
-            result_list.append('\t\tparam.put("%s",%s);\n' % (param, param))
-        result_list.append('\t\tparam.put("token",token);\n')
-        result_list.append('\t\tString sign= SignUtils.getSign(param);\n')
-        result_list.append('\t\tparam.put("sign",sign);\n')
-        result_list.append('\n\t\tResponse response=given().params(param).when().%s(url)\n' % info.get('method', 'get'))
-        result_list.append('\t\tlogger.info(">>>>> %s params       ：" + param);\n' % class_name)
-        result_list.append('\t\tlogger.info(">>>>> %s response    ：" + response.asString());\n' % class_name)
-        result_list.append('\t\treturn response;\n\t}\n')
+        self._result_list.append('\t\tString url="/" + attribute.getRiderVersion() + "%s";\n' % url)
+        self._result_list.append('\t\tMap<String,String> param = new HashMap<String, String>();\n')
+        for param in self._param_list:
+            self._result_list.append('\t\tparam.put("%s",%s);\n' % (param, param))
+        self._result_list.append('\t\tparam.put("token",token);\n')
+        self._result_list.append('\t\tString sign= SignUtils.getSign(param);\n')
+        self._result_list.append('\t\tparam.put("sign",sign);\n')
+        self._result_list.append(
+            '\n\t\tResponse response=given().params(param).when().%s(url)\n' % info.get('method', 'get'))
+        self._result_list.append('\t\tlogger.info(">>>>> %s params       ：" + param);\n' % self._class_name)
+        self._result_list.append(
+            '\t\tlogger.info(">>>>> %s response    ：" + response.asString());\n' % self._class_name)
+        self._result_list.append('\t\treturn response;\n\t}\n')
+
         # response check
-        result_list.append('\t\t//验证response\n')
-        result_list.append(
+        self._result_list.append('\n\t//验证response')
+        self._result_list.append(
             '\n\tpublic void check%sSuccess(Response %sResponse,Map<String,String> data}) {\n'
-            % (class_name, method_name))
-        result_list.append('\t\t%sResponse.\n'
-                           '\t\t\tthen().\n'
-                           '\t\t\tassertThat().statusCode(200).\n'
-                           '\t\t\tbody("status",equalTo("${something}"));\n\t}\n' % method_name)
+            % (self._class_name, self._method_name))
+        self._result_list.append('\t\t%sResponse.\n'
+                                 '\t\t\tthen().\n'
+                                 '\t\t\tassertThat().statusCode(200).\n'
+                                 '\t\t\tbody("status",equalTo("${something}"));\n\t}\n' % self._method_name)
 
         file_path = os.path.join(os.getcwd(), "format.txt")
 
         with open(file_path, "w") as f:
-            f.writelines(result_list)
+            f.writelines(self._result_list)
 
-        print result_list
+        print self._result_list
+
+    """
+    发起请求的方法，包含所有参数
+    has_token 表示是否包含 token 参数，跟 app/crm 相关的都有token，token = False
+    """
+
+    def request_method(self, has_token=False):
+        param_string = ''
+        for param in self._param_list:
+            param_string += 'String %s, ' % param
+        if has_token:
+            self._result_list.append('\n\tpublic void %sRequest(%s){\n' % (self._method_name, param_string[:-2]))
+        else:
+            self._result_list.append(
+                '\n\tpublic void %sRequest(%s String token){\n' % (self._method_name, param_string))
 
 
 def key_list(param_info):
@@ -108,14 +130,10 @@ def split_url_2_class_name(url):
 
 if __name__ == '__main__':
     info = {
-        "url": "/rider/obtain-good.json",
-        "method": 'get',
+        "url": "/api/eleme/order/get-order.json",
+        "method": 'post',
         "params": [
-            "order_standard_category",
-            "monthlyExpense",
-            "balance",
-            "frozenProvision",
-            "blockedFund",
+            "order_original_id"
         ],
         "result": {
             "code": "0000",
