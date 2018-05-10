@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # Created by Zhen Lei on 2017/8/12
 
+# 容器（Container）
 
 # 生成器（Generators）
 # 首先要了解迭代器（iterators），可以遍历一个容器（尤其是列表）的对象
@@ -17,6 +18,9 @@
 # 当我们使用一个循环来遍历某个东西时，这个过程本身就叫迭代
 
 # 生成器 也是一种迭代，但是只能迭代一次，因为他是在运行时 yield 值
+from itertools import islice, cycle
+
+
 def generator_function():
     for i in range(10):
         yield i
@@ -31,6 +35,22 @@ def fibon(n):
         a, b = b, a + b
 
 
+# 为了更直观地感受迭代器内部的执行过程，我们定义一个迭代器，以斐波那契数列为例：
+class Fib:
+    def __init__(self):
+        self.prev = 0
+        self.curr = 1
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        value = self.curr
+        self.curr += self.prev
+        self.prev = value
+        return value
+
+
 if __name__ == '__main__':
     # for item in generator_function():
     #     print item
@@ -42,3 +62,11 @@ if __name__ == '__main__':
     # 可以通过一个内置函数 iter，根据一个可迭代对象返回一个迭代器对象。
     my_iter = iter(my_string)
     print next(my_iter)
+    f = Fib()
+    result = list(islice(f, 0, 10))
+    print(result)
+    # 从无限的序列中生成有限序列
+    colors = cycle(['red', 'white', 'blue'])  # 无限序列
+    limited = islice(colors, 0, 10)
+    for x in limited:
+        print(x)

@@ -6,6 +6,9 @@
 # Decorator 是最难掌握的概念之一，接下来会详细的讨论
 
 # 一切皆对象
+from functools import wraps
+
+
 def hi(name="yasoob"):
     return "hi " + name
 
