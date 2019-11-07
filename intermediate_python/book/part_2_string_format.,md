@@ -1,0 +1,9 @@
+To begin, recall that we have some major principles when it come to define 
+"intermediate" python.
+一旦涉及到中级python，必须保持主要原则。
+Two of them were that our code needs to be efficient and scale, and another 
+was that others should be able to easily understand and use our code.
+其中两条分别是：代码必须高效且模块化，其次须简单易懂，其他人也能快速上手。
+These two principles come into contention when it comes to string operation.
+这两条原则在使用string相关操作时就充满争议。
+具体内容可看 string_contention.py
