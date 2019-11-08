@@ -15,7 +15,7 @@ def hi(name="yasoob"):
 
 # 从函数中返回函数
 def hi2(name="yasoob"):
-    print "now you are inside the hi() function"
+    print("now you are inside the hi() function")
 
     def greet():
         return "now you are in the greet() function"
@@ -31,23 +31,23 @@ def hi2(name="yasoob"):
 
 # 将函数作为参数传给另一个函数
 def do_something_before_hi(func):
-    print "I am doing some boring work before executing hi()"
-    print func()
+    print("I am doing some boring work before executing hi()")
+    print(func())
 
 
 def a_new_decorator(a_func):
     @wraps(a_func)
     def wrap_the_function():
-        print "I am doing some boring work before executing a_fun()"
+        print("I am doing some boring work before executing a_fun()")
         a_func()
-        print "I am doing some boring work after executing a_fun()"
+        print("I am doing some boring work after executing a_fun()")
 
     return wrap_the_function
 
 
 @a_new_decorator
 def a_function_requiring_decoration():
-    print "I am the function which needs some decoration to remove my foul smell"
+    print("I am the function which needs some decoration to remove my foul smell")
 
 
 class DecoratorInPython():
@@ -56,12 +56,12 @@ class DecoratorInPython():
 
 
 if __name__ == '__main__':
-    print hi()
+    print(hi())
     greet = hi
-    print greet()
+    print(greet())
     a = hi2("12")
-    print a
-    print a()
+    print(a)
+    print(a())
     do_something_before_hi(hi)
     a_function_requiring_decoration()
-    print a_function_requiring_decoration.__name__
+    print(a_function_requiring_decoration.__name__)
