@@ -68,13 +68,52 @@ def partition(a, l, r):
     x = a[r]
     i = l - 1
     for j in range(l, r):
+        aa = a[j]
         if a[j] <= x:
             i += 1
+            bb = a[i]
             a[i], a[j] = a[j], a[i]
     a[i + 1], a[r] = a[r], a[i + 1]
     return i + 1
 
 
-partition(array, 0, len(array) - 1)
+array = [8, 7, 2, 5, 6, 3]
 
+
+def quick_sort(a, l, r):
+    if l < r:
+        q = partition(a, l, r)
+        quick_sort(a, l, q - 1)
+        quick_sort(a, q + 1, r)
+
+
+quick_sort(array, 0, len(array) - 1)
+
+print(f'快速排序后数组：{array}')
+
+print('\n')
+print('另一种快排方法')
+
+
+def quick_sort1(a, l, r):
+    if l >= r:
+        return
+    low, high = l, r
+    key = a[low]
+    while l < r:
+        aa = a[r]
+        while l < r and a[r] > key:
+            r -= 1
+        a[l] = a[r]
+        while l < r and a[l] <= key:
+            l += 1
+        bb = a[l]
+        a[r] = a[l]
+    a[l] = key
+    quick_sort1(array, low, l - 1)
+    quick_sort1(array, l + 1, high)
+
+
+array = [8, 2, 9, 5, 6, 3]
+quick_sort1(array, 0, len(array) - 1)
 print(f'快速排序后数组：{array}')
