@@ -15,7 +15,7 @@ def hi(name="yasoob"):
 
 # 从函数中返回函数
 def hi2(name="yasoob"):
-    print("now you are inside the hi() function"
+    print("now you are inside the hi() function")
 
     def greet():
         return "now you are in the greet() function"
@@ -64,4 +64,4 @@ if __name__ == '__main__':
     print(a())
     do_something_before_hi(hi)
     a_function_requiring_decoration()
-    print(a_function_requiring_decoration.__name__
+    print(a_function_requiring_decoration.__name__)
