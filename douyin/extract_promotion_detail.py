@@ -36,4 +36,4 @@ for promotion in promotions:
     title = promotion['title']
     visitor_count = promotion['visitor']['count']
     price = promotion.get('price', 0) / 100.0
-    print(f'名称：{title}，\n\t销量：{sales}，访客：{visitor_count}，价格：{price}')
+    print(f'名称：{title}，\n\t销量：{sales}，访客：{visitor_count:,d}，价格：{price}')
