@@ -22,7 +22,7 @@ handlers:
     backupCount: 200
     interval: 1
     encoding: utf8
-    when: H
+    when: D
   info_file_handler:
     class: logging.handlers.RotatingFileHandler
     level: INFO
@@ -50,4 +50,4 @@ loggers:
     propagate: yes
 root:
   level: DEBUG
-  handlers: [console, console_err]
+  handlers: [console, console_err, error_file_handler]
