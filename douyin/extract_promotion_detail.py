@@ -55,7 +55,11 @@ def format_promotion(json_data):
     for promotion in promotions:
         sales = promotion.get('sales')
         title = promotion['title']
-        visitor_count = promotion['visitor']['count']
+        visitor = promotion.get('visitor')
+        if visitor:
+            visitor_count = visitor.get('count')
+        else:
+            visitor_count = None
         price = str(promotion.get('price', 0) / 100.0)
         last_aweme_id = promotion.get('last_aweme_id')  # 对应视频id
         promotion_id = promotion['promotion_id']
@@ -95,13 +99,14 @@ def format_user_info(json_data):
     bind_phone = bind_phone if bind_phone != '#' else ''
     signature = user.get('signature')  # 签名，可能包含手机号和微信号
     nickname = user.get('nickname')  # 昵称
+    unique_id = user.get('unique_id', '')  # 抖音号
     with_fusion_shop_entry = user.get('with_fusion_shop_entry')  # 是否有商品橱窗
     user_url = user['share_info']['share_url']  # 用户详情链接
     user_qr_code_url = user['share_info']['share_qrcode_url']['url_list']
     if len(user_qr_code_url) > 0:
         user_qr_code_url = user_qr_code_url[0]
 
-    user_dict = {'素人id': uid, '获赞量': total_favorited, '关注量': following_count, '作品数': aweme_count,
+    user_dict = {'素人id': uid, '': unique_id, '获赞量': total_favorited, '关注量': following_count, '作品数': aweme_count,
                  '动态数': dongtai_count, '粉丝量': follower_count, '喜欢量': favoriting_count, '绑定手机': bind_phone,
                  '签名': signature, '昵称': nickname, '是否有商品橱窗': with_fusion_shop_entry, '用户详情链接': user_url,
                  '用户详情二维码链接': user_qr_code_url}
@@ -172,6 +177,7 @@ def handle_file(files):
         file_dir = os.path.join(base_dir, file)
         file_name = os.path.splitext(file)[0]
         if 'promotion' in file_name:
+            user_id = re.match(r'(\d+)', file_name).groups()[0]
             with open(file_dir, 'rt', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip().strip('\n')
@@ -181,14 +187,18 @@ def handle_file(files):
                     promotion_infos = list(format_promotion(line))
                     new_promotion_infos = list(
                         filter(lambda x: x['商品id'] not in today_promotion_result, promotion_infos))
-                    promotion_insert_args = [list(item.values()) for item in new_promotion_infos]
+                    promotion_insert_args = [
+                        list(item.values()) for item in promotion_infos]  # todo：需要删除
+                    for x in promotion_insert_args:
+                        x.insert(1, user_id)
+                    # promotion_insert_args = [list(item.values()).insert(1, user_id) for item in new_promotion_infos]
                     logger.info(f'新增的商品:{[item[0] for item in promotion_insert_args]}')
                     # 批量插入数据
                     promotion_insert_sql = """REPLACE INTO douyin_promotion
-        (promotion_id, title, sales, visitor_count, price, goods_source, 
+        (promotion_id, suren_id, title, sales, visitor_count, price, goods_source, 
         coupon_real_price, elastic_title, elastic_type,
          aweme_id, coupon_link, detail_url, update_time)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     # todo: 需要看一下None值插入是什么效果
                     try:
                         cursor.executemany(promotion_insert_sql, promotion_insert_args)
@@ -219,13 +229,13 @@ def handle_file(files):
                     result = cursor.fetchall()
                     if len(result) > 0:
                         logger.warn(F'素人 {suren_infos[0]["素人id"]} 已经在今天录入了')
-                        continue
+                        # continue # todo: 需要修改
                     insert_args = [list(suren_info.values()) for suren_info in suren_infos]
                     # 如果没有当天的数据则存入/更新数据库
                     suren_insert = """REPLACE INTO douyin_user
-                (suren_id, total_favourited, following_count, aweme_count, dongtai_count, follower_count,
+                (suren_id, douyin_id,total_favourited, following_count, aweme_count, dongtai_count, follower_count,
                  favouriting_count, bind_phone, signature, nickname, with_fusion_shop_entry, url, qrcode_url, update_time)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     try:
                         cursor.executemany(query=suren_insert, args=insert_args)
                         conn.commit()
@@ -248,7 +258,8 @@ def handle_file(files):
                     aweme_infos = list(form_aweme(line))
                     # 求差集，获取今天没有存储过的作品id
                     new_aweme_infos = list(filter(lambda info: info['视频id'] not in today_aweme_result, aweme_infos))
-                    new_aweme_args = [list(item.values()) for item in new_aweme_infos]
+                    new_aweme_args = [list(item.values()) for item in aweme_infos]  # todo 需要删除
+                    # new_aweme_args = [list(item.values()) for item in new_aweme_infos]
                     logger.info(f'本次录入的新作品，id： {[item[0] for item in new_aweme_args]}')
                     aweme_insert_sql = """REPLACE INTO douyin_aweme
         (aweme_id, suren_id, digg_count, comment_count, share_count, download_count,
@@ -265,6 +276,7 @@ def handle_file(files):
             # df.to_excel(f'{user_id}_zuopin.xlsx', sheet_name='作品信息')
 
     conn.close()
+
 
 # 转换 utf-16 为 utf-8
 convert_file()

@@ -61,16 +61,19 @@ aweme_three = x + 300, y + 1400
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
 
-console = 2453, 1833
+console = 2589, 2055
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
-aweme_list_button = x + 600, y + 650
+aweme_list_button = x + 450, y + 630
 
 time_sample = [0.01, 0.021, 0.031, 0.023]
 time_1 = 0.1 + choice(time_sample)
 time_2 = 0.2 + choice(time_sample)
 time_3 = 0.3 + choice(time_sample)
 time_4 = 0.4 + choice(time_sample)
+time_5 = 0.5 + choice(time_sample)
+time_8 = 0.8 + choice(time_sample)
 time_10 = 1.0 + choice(time_sample)
+time_20 = 2.0 + choice(time_sample)
 
 
 def back():
@@ -98,13 +101,13 @@ def head_to_tail():
 def tail_to_head():
     """向上滑动，从下到上"""
     m.moveTo(tail[0], tail[1])
-    m.dragTo(head[0], head[1], duration=time_3)
+    m.dragTo(head[0], head[1], duration=time_8)
 
 
 def hua(exec_count, hua_method):
     """控制 hua 划的次数"""
     print(time.strftime('%H:%M:%S'))
-    count = math.ceil((exec_count - 6) / 9) + 1
+    count = math.ceil(exec_count / 9) + 1
 
     while count > 0:
         print('计数', count)
@@ -140,14 +143,25 @@ def get_suren_info():
 
     有则获取橱窗信息和作品信息
     """
-    time.sleep(2.5)
+    time.sleep(time_20)
     fly_left()  # 向左滑动，进入主页 tip：可能不需要这步骤
     # 判断是否有商品橱窗
     focus_console()
     has_aweme = int(input('请判断是否有橱窗'))
     if has_aweme:
         # 点击橱窗
-        m.click(aweme_list_button[0], aweme_list_button[1])
+        m.moveTo(aweme_list_button[0], aweme_list_button[1])
+        click_or_not = int(input('是否自由点击橱窗'))
+        if click_or_not:
+            input('点击完成？')
+            focus_console()
+        else:
+            m.click(aweme_list_button[0], aweme_list_button[1])
+        time.sleep(time_10)
+        focus_console()
+        promotion_amount = int(input('商品总数:'))
+        if promotion_amount > 10:
+            hua(promotion_amount, tail_to_head)
         # 返回作品界面
         back()
         time.sleep(time_4)
@@ -164,15 +178,18 @@ def get_suren_info():
         time.sleep(time_2)
     else:
         back()
-        time.sleep(time_1)
+        time.sleep(time_3)
         back()
-        time.sleep(time_2)
+        time.sleep(time_3)
 
 
-if __name__ == '__main__':
-    # draw_cycle()
+def roll_page():
     m.moveTo(head[0], head[1], duration=time_1)
     m.dragTo(tail[0], tail[1], duration=time_1)
+
+
+def action():
+    """流程"""
     # 点击第一个视频
     m.click(aweme_one[0], aweme_one[1], duration=time_1)
     get_suren_info()
@@ -181,7 +198,23 @@ if __name__ == '__main__':
     get_suren_info()
     m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 2.0)
     get_suren_info()
-    m.hotkey('alt', 'tab')
-    time.sleep(.6)
-    m.hotkey('ctrl', 'F5')
-    print('ctrl+f2 停止')
+    # time.sleep(time_10)
+
+
+if __name__ == '__main__':
+    roll_times = 0
+    while True:
+        focus_console()
+        is_continue = int(input('是否继续'))
+        if is_continue:
+            # m.hotkey('alt', 'tab')
+            roll_page()
+            roll_times += 1
+            print(f'翻页次数 {roll_times}')
+            action()
+
+    # m.hotkey('alt', 'tab')
+    # # draw_cycle()
+    # if is_continue:
+    #     m.hotkey('ctrl', 'F5')
+    # print('ctrl+f2 停止')
