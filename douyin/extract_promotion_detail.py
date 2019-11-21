@@ -32,6 +32,7 @@ from pprint import pprint
 
 from openpyxl import Workbook
 
+from douyin.conver_encoding import convert_file
 from tools import logger
 from tools.parser_config import get_db_tool
 
@@ -143,8 +144,8 @@ def form_aweme(json_data):
 
 import pandas as pd
 
-base_dir = 'D:\\douyin'
-all_files = os.listdir('D:\\douyin')
+base_dir = 'D:\\douyin2'
+all_files = os.listdir('D:\\douyin2')
 
 # 获取配置文件
 env_file = os.path.abspath(os.path.join(os.path.relpath(__file__), os.path.pardir, '.env'))
@@ -172,27 +173,29 @@ def handle_file(files):
         file_name = os.path.splitext(file)[0]
         if 'promotion' in file_name:
             with open(file_dir, 'rt', encoding='utf-8') as f:
-                line = f.readline()
-            if not line:
-                logger.error(f'文件 {file_name} 为空，请检查')
-                continue
-            promotion_infos = list(format_promotion(line))
-            new_promotion_infos = list(filter(lambda x: x['商品id'] not in today_promotion_result, promotion_infos))
-            promotion_insert_args = [list(item.values()) for item in new_promotion_infos]
-            logger.info(f'新增的商品:{[item[0] for item in promotion_insert_args]}')
-            # 批量插入数据
-            promotion_insert_sql = """REPLACE INTO douyin_promotion
-(promotion_id, title, sales, visitor_count, price, goods_source, 
-coupon_real_price, elastic_title, elastic_type,
- aweme_id, coupon_link, detail_url, update_time)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
-            # todo: 需要看一下None值插入是什么效果
-            try:
-                cursor.executemany(promotion_insert_sql, promotion_insert_args)
-                conn.commit()
-            except Exception as e:
-                logger.error(traceback.format_exc())
-                conn.rollback()
+                for line in f:
+                    line = line.strip().strip('\n')
+                    if not line:
+                        logger.error(f'文件当前行 {file_name} 为空，请检查')
+                        continue
+                    promotion_infos = list(format_promotion(line))
+                    new_promotion_infos = list(
+                        filter(lambda x: x['商品id'] not in today_promotion_result, promotion_infos))
+                    promotion_insert_args = [list(item.values()) for item in new_promotion_infos]
+                    logger.info(f'新增的商品:{[item[0] for item in promotion_insert_args]}')
+                    # 批量插入数据
+                    promotion_insert_sql = """REPLACE INTO douyin_promotion
+        (promotion_id, title, sales, visitor_count, price, goods_source, 
+        coupon_real_price, elastic_title, elastic_type,
+         aweme_id, coupon_link, detail_url, update_time)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                    # todo: 需要看一下None值插入是什么效果
+                    try:
+                        cursor.executemany(promotion_insert_sql, promotion_insert_args)
+                        conn.commit()
+                    except Exception as e:
+                        logger.error(traceback.format_exc())
+                        conn.rollback()
 
                 # 写入 excel
                 # df = pd.DataFrame(list(format_promotion(line)))
@@ -202,66 +205,69 @@ VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                 # writer.close()
         elif 'user' in file_name:
             with open(file_dir, 'rt', encoding='utf-8') as f:
-                line = f.readline()
-            if not line:
-                logger.error(f'文件 {file_name} 为空，请检查')
-                continue
-            suren_infos = list(format_user_info(line))
+                for line in f:
+                    line = line.strip().strip('\n')
+                    if not line:
+                        logger.error(f'文件当前行 {file_name} 为空，请检查')
+                        continue
+                    suren_infos = list(format_user_info(line))
 
-            suren_ids = [item['素人id'] for item in suren_infos]
-            # 以天为日期查询，如果该素人数据在当天已经更新过，则不存入数据库
-            suren_query = 'SELECT * FROM douyin_user WHERE suren_id = %s AND DATEDIFF(update_time, NOW()) = 0'
-            cursor.executemany(query=suren_query, args=suren_ids)
-            result = cursor.fetchall()
-            if len(result) > 0:
-                logger.warn(F'素人 {suren_infos[0]["素人id"]} 已经在今天录入了')
-                continue
-            insert_args = [list(suren_info.values()) for suren_info in suren_infos]
-            # 如果没有当天的数据则存入/更新数据库
-            suren_insert = """REPLACE INTO douyin_user
-        (suren_id, total_favourited, following_count, aweme_count, dongtai_count, follower_count,
-         favouriting_count, bind_phone, signature, nickname, with_fusion_shop_entry, url, qrcode_url, update_time)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
-            try:
-                cursor.executemany(query=suren_insert, args=insert_args)
-                conn.commit()
-            except Exception:
-                logger.error(traceback.format_exc())
-                conn.rollback()
-                # df = pd.DataFrame(list(format_user_info(line)))
-                # user_id = df['素人id'].values[0]
-                # # if not os.path.exists(f'{user_id}.xls'):
-                # writer = pd.ExcelWriter(f'{user_id}_user.xlsx')
-                # df.to_excel(writer, sheet_name='素人信息')
-                # writer.close()
+                    suren_ids = [item['素人id'] for item in suren_infos]
+                    # 以天为日期查询，如果该素人数据在当天已经更新过，则不存入数据库
+                    suren_query = 'SELECT * FROM douyin_user WHERE suren_id = %s AND DATEDIFF(update_time, NOW()) = 0'
+                    cursor.executemany(query=suren_query, args=suren_ids)
+                    result = cursor.fetchall()
+                    if len(result) > 0:
+                        logger.warn(F'素人 {suren_infos[0]["素人id"]} 已经在今天录入了')
+                        continue
+                    insert_args = [list(suren_info.values()) for suren_info in suren_infos]
+                    # 如果没有当天的数据则存入/更新数据库
+                    suren_insert = """REPLACE INTO douyin_user
+                (suren_id, total_favourited, following_count, aweme_count, dongtai_count, follower_count,
+                 favouriting_count, bind_phone, signature, nickname, with_fusion_shop_entry, url, qrcode_url, update_time)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                    try:
+                        cursor.executemany(query=suren_insert, args=insert_args)
+                        conn.commit()
+                    except Exception:
+                        logger.error(traceback.format_exc())
+                        conn.rollback()
+                        # df = pd.DataFrame(list(format_user_info(line)))
+                        # user_id = df['素人id'].values[0]
+                        # # if not os.path.exists(f'{user_id}.xls'):
+                        # writer = pd.ExcelWriter(f'{user_id}_user.xlsx')
+                        # df.to_excel(writer, sheet_name='素人信息')
+                        # writer.close()
         elif 'zuopin' in file_name:
             with open(file_dir, 'rt', encoding='utf-8') as f:
-                line = f.readline()
-            if not line:
-                logger.error(f'文件 {file_name} 为空，请检查')
-                continue
-            aweme_infos = list(form_aweme(line))
-            # 求差集，获取今天没有存储过的作品id
-            new_aweme_infos = list(filter(lambda info: info['视频id'] not in today_aweme_result, aweme_infos))
-            new_aweme_args = [list(item.values()) for item in new_aweme_infos]
-            logger.info(f'本次录入的新作品，id： {[item[0] for item in new_aweme_args]}')
-            aweme_insert_sql = """REPLACE INTO douyin_aweme
-(aweme_id, suren_id, digg_count, comment_count, share_count, download_count,
- forward_count, tag, `desc`, create_time, update_time)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
-            try:
-                cursor.executemany(aweme_insert_sql, new_aweme_args)
-                conn.commit()
-            except:
-                logger.error(traceback.format_exc())
-                conn.rollback()
+                for line in f:
+                    line = line.strip().strip('\n')
+                    if not line:
+                        logger.error(f'文件当前行 {file_name} 为空，请检查')
+                        continue
+                    aweme_infos = list(form_aweme(line))
+                    # 求差集，获取今天没有存储过的作品id
+                    new_aweme_infos = list(filter(lambda info: info['视频id'] not in today_aweme_result, aweme_infos))
+                    new_aweme_args = [list(item.values()) for item in new_aweme_infos]
+                    logger.info(f'本次录入的新作品，id： {[item[0] for item in new_aweme_args]}')
+                    aweme_insert_sql = """REPLACE INTO douyin_aweme
+        (aweme_id, suren_id, digg_count, comment_count, share_count, download_count,
+         forward_count, tag, `desc`, create_time, update_time)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                    try:
+                        cursor.executemany(aweme_insert_sql, new_aweme_args)
+                        conn.commit()
+                    except:
+                        logger.error(traceback.format_exc())
+                        conn.rollback()
             # df = pd.DataFrame(list(form_aweme(line)))
             # user_id = df['素人id'].values[0]
             # df.to_excel(f'{user_id}_zuopin.xlsx', sheet_name='作品信息')
 
     conn.close()
 
-
+# 转换 utf-16 为 utf-8
+convert_file()
 handle_file(all_files)
 
 # # todo: 不知道能不能做去重，先清空数据再说

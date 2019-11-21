@@ -51,7 +51,7 @@ def draw_cycle():
             m.moveTo(x, y, duration=.1)
 
 
-x, y = 749, 155
+x, y = 813, 157
 back_pos = x, y
 head = x + 762, y + 55
 tail = x + 762, y + 1630
@@ -63,6 +63,7 @@ left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
 
 console = 2453, 1833
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
+aweme_list_button = x + 600, y + 650
 
 time_sample = [0.01, 0.021, 0.031, 0.023]
 time_1 = 0.1 + choice(time_sample)
@@ -73,7 +74,7 @@ time_10 = 1.0 + choice(time_sample)
 
 
 def back():
-    m.click(749, 155)
+    m.click(x, y)
 
 
 def fly_left():
@@ -129,28 +130,57 @@ def translate_word():
     m.doubleClick(head[0], head[1])
 
 
+def focus_console():
+    m.moveTo(console[0], console[1], duration=.5)
+    m.click(console[0], console[1])
+
+
+def get_suren_info():
+    """获取素人信息，判断是否有橱窗
+
+    有则获取橱窗信息和作品信息
+    """
+    time.sleep(2.5)
+    fly_left()  # 向左滑动，进入主页 tip：可能不需要这步骤
+    # 判断是否有商品橱窗
+    focus_console()
+    has_aweme = int(input('请判断是否有橱窗'))
+    if has_aweme:
+        # 点击橱窗
+        m.click(aweme_list_button[0], aweme_list_button[1])
+        # 返回作品界面
+        back()
+        time.sleep(time_4)
+        # 作品向上滑动
+        m.moveTo(console[0], console[1])
+        m.click(console[0], console[1])
+        aweme_num = int(input('请输入作品总数'))
+        hua(aweme_num, tail_to_head)
+        # 返回视频界面
+        back()
+        time.sleep(time_1)
+        # 返回消息列表
+        back()
+        time.sleep(time_2)
+    else:
+        back()
+        time.sleep(time_1)
+        back()
+        time.sleep(time_2)
+
+
 if __name__ == '__main__':
     # draw_cycle()
-    print(m.position())
-    m.moveTo(749, 155)
     m.moveTo(head[0], head[1], duration=time_1)
     m.dragTo(tail[0], tail[1], duration=time_1)
     # 点击第一个视频
     m.click(aweme_one[0], aweme_one[1], duration=time_1)
-    time.sleep(2.5)
-    fly_left()  # 向左滑动，进入主页 tip：可能不需要这步骤
-    # 判断是否有商品橱窗
-    m.moveTo(head[0], head[1])
-
-    # 向上滑动
-    m.moveTo(console[0], console[1])
-    m.click(console[0], console[1])
-    aweme_num = int(input('请输入作品总数'))
-    hua(aweme_num, tail_to_head)
-    time.sleep(12000)
-
-    m.moveTo(aweme_two[0], aweme_two[1], duration=0.2 + random() / 3.0)
-    m.moveTo(aweme_three[0], aweme_three[1], duration=.2 + random() / 2.0)
+    get_suren_info()
+    # 点击第二个视频
+    m.click(aweme_two[0], aweme_two[1], duration=0.2 + random() / 3.0)
+    get_suren_info()
+    m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 2.0)
+    get_suren_info()
     m.hotkey('alt', 'tab')
     time.sleep(.6)
     m.hotkey('ctrl', 'F5')
