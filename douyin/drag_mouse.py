@@ -26,7 +26,7 @@
 # 屏幕分辨率
 import math
 import time
-from random import random, randrange, sample, choice
+from random import random, randrange, sample, choice, randint
 
 import pyautogui as m
 
@@ -51,19 +51,20 @@ def draw_cycle():
             m.moveTo(x, y, duration=.1)
 
 
-x, y = 813, 157
+x, y = 791, 155
 back_pos = x, y
-head = x + 762, y + 55
+head = x + 762, y + 81
 tail = x + 762, y + 1630
-aweme_one = x + 300, y + 400
-aweme_two = x + 300, y + 955
-aweme_three = x + 300, y + 1400
+aweme_one = x + 200 + randint(1, 5), y + 400
+aweme_two = x + 130 + randint(5, 10), y + 850
+aweme_three = x + 135 + randint(30, 170), y + 1400
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
+avatar = x + 976 + randint(-3, 3), y + 987 + randint(-3, 3)
 
 console = 2589, 2055
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
-aweme_list_button = x + 450, y + 630
+aweme_list_button = x + 70, y + 506
 
 time_sample = [0.01, 0.021, 0.031, 0.023]
 time_1 = 0.1 + choice(time_sample)
@@ -73,6 +74,8 @@ time_4 = 0.4 + choice(time_sample)
 time_5 = 0.5 + choice(time_sample)
 time_8 = 0.8 + choice(time_sample)
 time_10 = 1.0 + choice(time_sample)
+time_13 = 1.3 + choice(time_sample)
+time_15 = 1.5 + choice(time_sample)
 time_20 = 2.0 + choice(time_sample)
 
 
@@ -82,6 +85,11 @@ def back():
 
 def fly_left():
     # 向左滑动
+    m.moveTo(right[0], right[1], duration=time_1)
+    m.dragTo(left[0] - 300, left[1], duration=time_3)
+    # 返回再滑动
+    back()
+    time.sleep(time_5)
     m.moveTo(right[0], right[1], duration=time_1)
     m.dragTo(left[0] - 300, left[1], duration=time_3)
 
@@ -94,25 +102,42 @@ def fly_right():
 
 def head_to_tail():
     """向下滑动，从上到下"""
-    m.moveTo(head[0], head[1])
-    m.dragTo(tail[0], tail[1], duration=time_2)
+    new_x = head[0] + randint(-400, 100)
+    m.moveTo(new_x, head[1])
+    m.dragTo(new_x, tail[1], duration=time_5)
 
 
 def tail_to_head():
     """向上滑动，从下到上"""
-    m.moveTo(tail[0], tail[1])
-    m.dragTo(head[0], head[1], duration=time_8)
+    new_x = head[0] + randint(-400, 100)
+    m.moveTo(new_x, tail[1] + randint(-300, 20))
+    m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
+             duration=time_5 + randint(1, 10) / 15.0)
+    time.sleep(time_13 + randint(1, 10) / 15)
 
 
-def hua(exec_count, hua_method):
+def tail_to_head_faster():
+    """向上滑动，从下到上"""
+    new_x = head[0] + randint(-400, 100)
+    m.moveTo(new_x, tail[1] + randint(-300, 20))
+    m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
+             duration=randint(3, 6) / 20.0)
+    time.sleep(time_1 + randint(1, 10) / 15)
+
+
+def hua(exec_count, hua_method, step=9):
     """控制 hua 划的次数"""
     print(time.strftime('%H:%M:%S'))
-    count = math.ceil(exec_count / 9) + 1
+    count = math.ceil(exec_count / step) + 1
 
     while count > 0:
         print('计数', count)
         count -= 1
         hua_method()
+
+
+def click_avatar():
+    m.click(avatar[0], avatar[1])
 
 
 # 控制台相关功能
@@ -134,17 +159,55 @@ def translate_word():
 
 
 def focus_console():
-    m.moveTo(console[0], console[1], duration=.5)
+    m.moveTo(console[0], console[1], duration=.1)
     m.click(console[0], console[1])
 
 
-def get_suren_info():
+def random_read_aweme():
+    m.click(aweme_three[0] + randint(50, 350), aweme_three[1] + randint(-100, 0))
+    time.sleep(time_5)
+    m.doubleClick()
+    time.sleep(time_2)
+    back()
+
+
+def fly_up_to_get_all_aweme(return_times=1):
+    """向上滑动获取所有作品
+
+    :param return_times 判断返回上一页时，是返回 一次还是两次
+    """
+    m.moveTo(console[0], console[1])
+    m.click(console[0], console[1])
+    aweme_num = int(input('请输入作品总数：'))
+    if aweme_num > 20:
+        hua(aweme_num, tail_to_head)
+    if return_times == 1:
+        # 返回一次
+        back()
+        time.sleep(time_8 + randint(1, 2) / 10.0)
+    elif return_times == 2:
+        # 返回两次
+        back()
+        time.sleep(time_10)
+        # 设置随机访问视频
+        tea = randint(1, 10)
+        if tea > 8:
+            print('进入查看视频')
+            random_read_aweme()
+
+        # 返回消息列表
+        back()
+        time.sleep(time_10)
+
+
+def get_suren_info(*args, **kwargs):
     """获取素人信息，判断是否有橱窗
 
     有则获取橱窗信息和作品信息
     """
-    time.sleep(time_20)
-    fly_left()  # 向左滑动，进入主页 tip：可能不需要这步骤
+    return_times = kwargs.get('return_times')
+    if return_times is None:
+        raise Exception('返回次数必须输入')
     # 判断是否有商品橱窗
     focus_console()
     has_aweme = int(input('请判断是否有橱窗'))
@@ -156,42 +219,48 @@ def get_suren_info():
             input('点击完成？')
             focus_console()
         else:
-            m.click(aweme_list_button[0], aweme_list_button[1])
-        time.sleep(time_10)
+            to_x, to_y = m.position()
+            m.click(to_x, to_y)
+        time.sleep(time_5)
         focus_console()
         promotion_amount = int(input('商品总数:'))
-        if promotion_amount > 10:
-            hua(promotion_amount, tail_to_head)
+        if promotion_amount > 20:
+            hua(promotion_amount, tail_to_head_faster, step=4)
         # 返回作品界面
         back()
         time.sleep(time_4)
+
         # 作品向上滑动
-        m.moveTo(console[0], console[1])
-        m.click(console[0], console[1])
-        aweme_num = int(input('请输入作品总数'))
-        hua(aweme_num, tail_to_head)
-        # 返回视频界面
-        back()
-        time.sleep(time_1)
-        # 返回消息列表
-        back()
-        time.sleep(time_2)
+        fly_up_to_get_all_aweme(return_times)
+
     else:
-        back()
-        time.sleep(time_3)
-        back()
-        time.sleep(time_3)
+        for i in range(return_times - 1):
+            back()
+            time.sleep(time_10)
 
 
 def roll_page():
     m.moveTo(head[0], head[1], duration=time_1)
-    m.dragTo(tail[0], tail[1], duration=time_1)
+    m.dragTo(tail[0], tail[1] + 50, duration=time_1)
 
 
 def action():
     """流程"""
     # 点击第一个视频
-    m.click(aweme_one[0], aweme_one[1], duration=time_1)
+    chose_first = randint(1, 10)
+    if chose_first > 11:  # 如果点击被封了，就走下面的逻辑
+        m.click(aweme_one[0], aweme_one[1], duration=time_1)
+    else:
+        m.moveTo(aweme_one[0], aweme_one[1] - 200)
+        move_first = input('是否需要移动到第一个视频')
+        if move_first:
+            first_x, first_y = m.position()
+            m.click(first_x, first_y)
+        else:
+            m.click(aweme_one[0], aweme_one[1] - 200)
+
+    time.sleep(time_20 + time_3)
+    fly_left()  # 向左滑动，进入主页 tip：可能不需要这步骤
     get_suren_info()
     # 点击第二个视频
     m.click(aweme_two[0], aweme_two[1], duration=0.2 + random() / 3.0)
@@ -199,6 +268,77 @@ def action():
     m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 2.0)
     get_suren_info()
     # time.sleep(time_10)
+
+
+def action_two(fetch_method):
+    """只获取所有作品信息"""
+    flag_num = 8
+    chose_first = randint(1, 10)
+    click_title_or_aweme = chose_first > flag_num
+    return_times = 2 if click_title_or_aweme else 1
+    if click_title_or_aweme:  # todo: 如果点击被封了，就走下面的逻辑
+        print('点击头像进入视频后，再进入主页')
+        m.click(aweme_one[0], aweme_one[1], duration=time_1)
+        time.sleep(time_20 + time_3)
+        # fly_left()  # 向左滑动，进入主页
+        click_avatar()  # 点击头像，进入主页
+    else:
+        print('直接进入主页')
+        focus_console()
+        m.moveTo(aweme_one[0], aweme_one[1] - 200)
+        move_first = input('移动到第一个视频：')
+        if move_first:
+            first_x, first_y = m.position()
+            m.click(first_x, first_y)
+        else:
+            m.click(aweme_one[0], aweme_one[1] - 200)
+    # 选择执行的功能
+    fetch_method(return_times=return_times)
+
+    # 点击第二个视频
+    chose_second = randint(1, 10)
+    click_title_or_aweme_second = chose_second > flag_num
+    return_times_second = 2 if click_title_or_aweme_second else 1
+    if click_title_or_aweme_second:
+        print('点击头像进入视频后，再进入主页')
+        m.click(aweme_two[0], aweme_two[1], duration=0.2 + random() / 3.0)
+        time.sleep(time_20 + time_3)
+        click_avatar()  # 点击头像，进入主页
+    else:
+        print('直接进入主页')
+        focus_console()
+        m.moveTo(aweme_two[0] + 30 + randint(3, 8), aweme_two[1] - 103)
+        move_second = input('移动到第二个视频：')
+        if move_second:
+            second_x, second_y = m.position()
+            m.click(second_x, second_y)
+        else:
+            m.click(aweme_two[0] + 30 + randint(3, 8), aweme_two[1] - 103)
+    # 执行滑动判断逻辑
+    fetch_method(return_times=return_times_second)
+
+    # 点击第三个视频
+    chose_third = randint(1, 10)
+    click_title_or_aweme_third = chose_third > flag_num
+    return_times_third = 2 if click_title_or_aweme_third else 1
+    if click_title_or_aweme_third:
+        print('点击头像进入视频后，再进入主页')
+        m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 2.0)
+        time.sleep(time_20 + time_3)
+        # fly_left()  # 向左滑动，进入主页
+        click_avatar()  # 点击头像，进入主页
+    else:
+        print('直接进入主页')
+        focus_console()
+        m.moveTo(aweme_three[0], aweme_three[1] - 150)
+        move_third = input('移动到第三个视频：')
+        if move_third:
+            third_x, third_y = m.position()
+            m.click(third_x, third_y)
+        else:
+            m.click(aweme_three[0], aweme_three[1] - 150)
+    # 执行滑动判断逻辑
+    fetch_method(return_times=return_times_third)
 
 
 if __name__ == '__main__':
@@ -211,7 +351,8 @@ if __name__ == '__main__':
             roll_page()
             roll_times += 1
             print(f'翻页次数 {roll_times}')
-            action()
+            # action() # 执行步骤一
+            action_two(fly_up_to_get_all_aweme)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
 
     # m.hotkey('alt', 'tab')
     # # draw_cycle()

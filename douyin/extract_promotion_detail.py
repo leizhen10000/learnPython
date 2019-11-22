@@ -28,11 +28,10 @@ import os
 import re
 import traceback
 from datetime import datetime
-from pprint import pprint
 
 from openpyxl import Workbook
 
-from douyin.conver_encoding import convert_file
+from douyin.conver_encoding import convert_file, clean_dir
 from tools import logger
 from tools.parser_config import get_db_tool
 
@@ -63,7 +62,7 @@ def format_promotion(json_data):
         price = str(promotion.get('price', 0) / 100.0)
         last_aweme_id = promotion.get('last_aweme_id')  # 对应视频id
         promotion_id = promotion['promotion_id']
-        goods_source = promotion['goods_source']
+        goods_source = promotion.get('goods_source', '')
         coupon_url, coupon_real_price = '', ''
         coupon = promotion.get('apply_coupon_button')
         if coupon:
@@ -100,6 +99,9 @@ def format_user_info(json_data):
     signature = user.get('signature')  # 签名，可能包含手机号和微信号
     nickname = user.get('nickname')  # 昵称
     unique_id = user.get('unique_id', '')  # 抖音号
+    short_id = user.get('short_id', '')  # 抖音号2
+    if not unique_id:
+        unique_id = short_id
     with_fusion_shop_entry = user.get('with_fusion_shop_entry')  # 是否有商品橱窗
     user_url = user['share_info']['share_url']  # 用户详情链接
     user_qr_code_url = user['share_info']['share_qrcode_url']['url_list']
@@ -130,6 +132,15 @@ def form_aweme(json_data):
         forward_count = statistic['forward_count']  # 转发量
         aweme_id = aweme['aweme_id']  # 作品id
         author_user_id = str(aweme['author_user_id'])  # 用户id
+        simple_promotions = aweme.get('simple_promotions')
+        # 获取商品id和另一个product_id
+        promotion_id, product_id = '', ''
+        if simple_promotions is not None:
+            promotions_dict = json.loads(simple_promotions)
+            if promotions_dict is not None and len(promotions_dict) > 0:
+                promotions_dict = promotions_dict[0]
+                promotion_id = promotions_dict.get('promotion_id', '')
+                product_id = promotions_dict.get('product_id', '')
         # 分类
         text_extra = aweme['text_extra']
         tag = []
@@ -140,15 +151,14 @@ def form_aweme(json_data):
         desc = aweme['desc']  # 视频标题
         create_time = datetime.fromtimestamp(int(aweme['create_time']))  # 创建时间
         aweme_dict = {'视频id': aweme_id, '素人id': author_user_id, '点赞量': digg_count, '评论量': comment_count,
-                      '分享量': share_count, '下载量': download_count, '转发量': forward_count, '标签': tag,
-                      '视频标题': desc, '发布时间': create_time}
+                      '分享量': share_count, '下载量': download_count, '转发量': forward_count, '商品id': promotion_id,
+                      '产品id': product_id, '标签': tag, '视频标题': desc, '发布时间': create_time}
         logger.info('作品信息-提取内容')
         logger.info(aweme_dict)
         yield aweme_dict
 
 
-import pandas as pd
-
+source_base_dir = 'D:\\douyin'
 base_dir = 'D:\\douyin2'
 all_files = os.listdir('D:\\douyin2')
 
@@ -263,8 +273,8 @@ def handle_file(files):
                     logger.info(f'本次录入的新作品，id： {[item[0] for item in new_aweme_args]}')
                     aweme_insert_sql = """REPLACE INTO douyin_aweme
         (aweme_id, suren_id, digg_count, comment_count, share_count, download_count,
-         forward_count, tag, `desc`, create_time, update_time)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+         forward_count, promotion_id, product_id,tag, `desc`, create_time, update_time)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, NOW())"""
                     try:
                         cursor.executemany(aweme_insert_sql, new_aweme_args)
                         conn.commit()
@@ -281,6 +291,7 @@ def handle_file(files):
 # 转换 utf-16 为 utf-8
 convert_file()
 handle_file(all_files)
+
 
 # # todo: 不知道能不能做去重，先清空数据再说
 # def clean():
