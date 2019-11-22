@@ -36,6 +36,7 @@ def convert_file():
             res = f.read().decode('utf-16-le').encode('utf-8').decode('utf-8-sig')
         with open(os.path.join('D:\douyin2', file), 'w', encoding='utf-8') as fw:
             fw.write(res)
+    return True
 
 
 def clean_dir(path):

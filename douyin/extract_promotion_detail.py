@@ -26,6 +26,7 @@
 import json
 import os
 import re
+import time
 import traceback
 from datetime import datetime
 
@@ -161,6 +162,8 @@ def form_aweme(json_data):
 source_base_dir = 'D:\\douyin'
 base_dir = 'D:\\douyin2'
 all_files = os.listdir('D:\\douyin2')
+if not all_files:
+    all_files = os.listdir(base_dir)
 
 # 获取配置文件
 env_file = os.path.abspath(os.path.join(os.path.relpath(__file__), os.path.pardir, '.env'))
@@ -289,9 +292,14 @@ def handle_file(files):
 
 
 # 转换 utf-16 为 utf-8
-convert_file()
-handle_file(all_files)
-
+success = convert_file()
+time.sleep(1)
+if success:
+    all_files = os.listdir(base_dir)
+    handle_file(all_files)
+# 清理数据
+clean_dir(base_dir)
+clean_dir(source_base_dir)
 
 # # todo: 不知道能不能做去重，先清空数据再说
 # def clean():

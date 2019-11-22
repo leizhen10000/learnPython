@@ -64,7 +64,7 @@ avatar = x + 976 + randint(-3, 3), y + 987 + randint(-3, 3)
 
 console = 2589, 2055
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
-aweme_list_button = x + 70, y + 506
+aweme_list_button = x + 70, y + 510
 
 time_sample = [0.01, 0.021, 0.031, 0.023]
 time_1 = 0.1 + choice(time_sample)
@@ -76,6 +76,7 @@ time_8 = 0.8 + choice(time_sample)
 time_10 = 1.0 + choice(time_sample)
 time_13 = 1.3 + choice(time_sample)
 time_15 = 1.5 + choice(time_sample)
+time_18 = 1.8 + choice(time_sample)
 time_20 = 2.0 + choice(time_sample)
 
 
@@ -112,7 +113,7 @@ def tail_to_head():
     new_x = head[0] + randint(-400, 100)
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
-             duration=time_5 + randint(1, 10) / 15.0)
+             duration=randint(1, 3) / 15.0)
     time.sleep(time_13 + randint(1, 10) / 15)
 
 
@@ -121,7 +122,7 @@ def tail_to_head_faster():
     new_x = head[0] + randint(-400, 100)
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
-             duration=randint(3, 6) / 20.0)
+             duration=randint(1, 3) / 25.0)
     time.sleep(time_1 + randint(1, 10) / 15)
 
 
@@ -137,6 +138,11 @@ def hua(exec_count, hua_method, step=9):
 
 
 def click_avatar():
+    m.click(avatar[0], avatar[1])
+    print('返回再点击，等待3s')
+    time.sleep(3 + randint(1, 5) / 5.0)
+    back()
+    time.sleep(time_5)
     m.click(avatar[0], avatar[1])
 
 
@@ -234,7 +240,7 @@ def get_suren_info(*args, **kwargs):
         fly_up_to_get_all_aweme(return_times)
 
     else:
-        for i in range(return_times - 1):
+        for i in range(return_times):
             back()
             time.sleep(time_10)
 
@@ -352,7 +358,7 @@ if __name__ == '__main__':
             roll_times += 1
             print(f'翻页次数 {roll_times}')
             # action() # 执行步骤一
-            action_two(fly_up_to_get_all_aweme)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+            action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
 
     # m.hotkey('alt', 'tab')
     # # draw_cycle()
