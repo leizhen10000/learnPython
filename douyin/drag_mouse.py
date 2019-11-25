@@ -64,7 +64,7 @@ avatar = x + 976 + randint(-3, 3), y + 987 + randint(-3, 3)
 
 console = 2589, 2055
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
-aweme_list_button = x + 70, y + 510
+aweme_list_button = x + 70, y + 515
 
 time_sample = [0.01, 0.021, 0.031, 0.023]
 time_1 = 0.1 + choice(time_sample)
@@ -113,8 +113,8 @@ def tail_to_head():
     new_x = head[0] + randint(-400, 100)
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
-             duration=randint(1, 3) / 15.0)
-    time.sleep(time_13 + randint(1, 10) / 15)
+             duration=randint(1, 3) / 26.0)
+    time.sleep(time_2 + time_15 + randint(1, 10) / 15)
 
 
 def tail_to_head_faster():
@@ -186,7 +186,7 @@ def fly_up_to_get_all_aweme(return_times=1):
     m.click(console[0], console[1])
     aweme_num = int(input('请输入作品总数：'))
     if aweme_num > 20:
-        hua(aweme_num, tail_to_head)
+        hua(aweme_num, tail_to_head, step=7)
     if return_times == 1:
         # 返回一次
         back()
@@ -230,8 +230,8 @@ def get_suren_info(*args, **kwargs):
         time.sleep(time_5)
         focus_console()
         promotion_amount = int(input('商品总数:'))
-        if promotion_amount > 20:
-            hua(promotion_amount, tail_to_head_faster, step=4)
+        if promotion_amount > 10:
+            hua(promotion_amount, tail_to_head_faster, step=8)
         # 返回作品界面
         back()
         time.sleep(time_4)
@@ -278,7 +278,7 @@ def action():
 
 def action_two(fetch_method):
     """只获取所有作品信息"""
-    flag_num = 8
+    flag_num = 9
     chose_first = randint(1, 10)
     click_title_or_aweme = chose_first > flag_num
     return_times = 2 if click_title_or_aweme else 1

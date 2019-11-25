@@ -230,8 +230,9 @@ def handle_file(files):
             with open(file_dir, 'rt', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip().strip('\n')
-                    if not line:
-                        logger.error(f'文件当前行 {file_name} 为空，请检查')
+                    if not line or '参数不合法' in line:
+                        logger.error(f'文件当前行 {file_name} 为空或参数不合法，请检查')
+                        logger.error(line)
                         continue
                     suren_infos = list(format_user_info(line))
 
