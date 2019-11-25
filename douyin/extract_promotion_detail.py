@@ -292,15 +292,14 @@ def handle_file(files):
     conn.close()
 
 
-# 转换 utf-16 为 utf-8
-success = convert_file()
-time.sleep(1)
-if success:
-    all_files = os.listdir(base_dir)
-    handle_file(all_files)
-# 清理数据
-clean_dir(base_dir)
-clean_dir(source_base_dir)
+# # 转换 utf-16 为 utf-8
+# success = convert_file()
+# # time.sleep(1)
+# # if success:
+# handle_file(os.listdir(base_dir))
+# # 清理数据
+# clean_dir(base_dir)
+# clean_dir(source_base_dir)
 
 # # todo: 不知道能不能做去重，先清空数据再说
 # def clean():

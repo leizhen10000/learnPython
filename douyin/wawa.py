@@ -28,4 +28,4 @@ from douyin.drag_mouse import check_user_in_db
 if __name__ == '__main__':
     # hua(10, head_to_tail, step=2)
 
-    list(check_user_in_db())
+    print(check_user_in_db())

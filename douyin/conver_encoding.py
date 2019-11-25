@@ -26,11 +26,11 @@
 import os
 
 
-def convert_file():
+def convert_file(exclude_file='no'):
     file_list = os.listdir('D:\douyin')
     for file in file_list:
         file_name = os.path.join('D:\douyin', file)
-        if not os.path.isfile(file_name):
+        if not os.path.isfile(file_name) or exclude_file in file_name:
             continue
         with open(file_name, 'rb') as f:
             res = f.read().decode('utf-16-le').encode('utf-8').decode('utf-8-sig')

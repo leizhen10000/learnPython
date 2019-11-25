@@ -27,12 +27,15 @@
 import math
 import os
 import re
+import threading
 import time
+import traceback
 from random import random, randrange, sample, choice, randint
 
 import pyautogui as m
 
-from douyin.conver_encoding import convert_file
+from douyin.conver_encoding import convert_file, clean_dir
+from douyin.extract_promotion_detail import handle_file
 from tools.parser_config import get_db_tool
 
 width, height = m.size()
@@ -182,6 +185,48 @@ def random_read_aweme():
     back()
 
 
+# lock = threading.RLock()
+
+
+def _write_to_new_file(filename, new_filename):
+    """去除空行，写入新文件"""
+    # id = threading.currentThread().getName()
+    # lock.acquire()
+
+    file1 = open(filename, 'rt', encoding='utf-8')
+    file2 = open(new_filename, 'w', encoding='utf-8')
+    try:
+        for line in file1:
+            new_line = line.strip()
+            if new_line:  # 空行不插入
+                file2.write(line)
+    finally:
+        file1.close()
+        file2.close()
+    # lock.release()
+    # print(f"Thead {id} exit")
+
+
+def _read_from_new_file(new_filename):
+    """从新文件中读取内容"""
+    # id = threading.currentThread().getName()
+    # lock.acquire()
+    with open(new_filename, 'rb') as f:
+        # off = -50
+        # while True:
+        # f.seek(off, 2)
+        lines = f.readlines()
+        lines = [line.strip() for line in lines]
+        last_line = str(lines[-1].decode('utf-8'))
+        # if len(lines) >= 2:
+        #     break
+        # else:
+        #     off *= 2
+    # lock.release()
+    # print(f'Thread {id} exit')
+    return last_line
+
+
 def check_user_in_db():
     """验证用户信息相关功能
 
@@ -192,12 +237,17 @@ def check_user_in_db():
     convert_file()
     base_dir = 'd:\\douyin2'
     files = os.listdir(base_dir)
+    nickname = None
 
     for file in files:
         file_name = os.path.join(base_dir, file)
         if os.path.isfile(file_name) and file.startswith('user'):
-            line = _get_last_line_in_file(file_name)
-            nickname = re.findall(r'"nickname":"(.*?)"', line)[0]
+            line = get_last_line_in_file(file_name)
+            nickname = re.findall(r'"nickname":"(.*?)"', line)
+            print('=' * 20)
+            print(nickname)
+            if nickname is None or len(nickname) < 1:
+                return flag
             break
 
     # 查询数据库
@@ -208,13 +258,15 @@ def check_user_in_db():
 FROM douyin_aweme AS a
        INNER JOIN douyin_user AS u
                   ON u.suren_id = a.suren_id
-                    AND u.nickname LIKE '%s%'"""
+                    AND u.nickname = %s """
     try:
         cursor.execute(sql, nickname)
         result = cursor.fetchall()
         if not result or len(result) < 1:
+            print(f'用户 {nickname} 不在数据库中')
             flag = False
     except:
+        traceback.print_exc()
         conn.rollback()
     finally:
         cursor.close()
@@ -222,33 +274,18 @@ FROM douyin_aweme AS a
     return flag
 
 
-def _get_last_line_in_file(file_name):
+def get_last_line_in_file(file_name):
     """获取文件最后一行"""
     # 去除空行
-    new_file_name = file_name.replace('_', '-')
-    file1 = open(file_name, 'rt', encoding='utf-8')
-    file2 = open(new_file_name, 'wt', encoding='utf-8')
-    try:
-        for line in file1.readlines():
-            new_line = line.strip()
-            if new_line:  # 空行不插入
-                file2.write(line)
-    finally:
-        file1.close()
-        file2.close()
-    os.remove(file_name)
+    new_filename = file_name.replace('_', '-')
 
-    with open(new_file_name, 'rb') as f:
-        off = -50
-        while True:
-            f.seek(off, 2)
-            lines = f.readlines()
-            lines = [line.strip() for line in lines]
-            if len(lines) >= 2:
-                last_line = str(lines[-1].decode('utf-8'))
-                break
-            else:
-                off *= 2
+    # threading.Thread(target=_write_to_new_file, args=(file_name, new_filename)).start()
+    _write_to_new_file(file_name, new_filename)
+    time.sleep(2)
+    last_line = _read_from_new_file(new_filename)
+
+    # 删除旧文件
+    os.remove(file_name)
 
     return last_line
 
@@ -297,10 +334,16 @@ def get_suren_info(*args, **kwargs):
     return_times = kwargs.get('return_times')
     if return_times is None:
         raise Exception('返回次数必须输入')
+    source_base_dir = 'D:\\douyin'
+    base_dir = 'D:\\douyin2'
+    time.sleep(.5)
     # 判断用户是否已经在数据库中，且包含作品信息
-    if not check_user_in_db():
+    if check_user_in_db():
         print('用户已经在数据库中存在，返回消息列表')
         _back_for_times(return_times)
+        # 清理数据
+        clean_dir(base_dir)
+        clean_dir(source_base_dir)
         return
     # 判断是否有商品橱窗
     focus_console()
@@ -326,6 +369,16 @@ def get_suren_info(*args, **kwargs):
 
         # 作品向上滑动
         fly_up_to_get_all_aweme(return_times)
+
+        convert_file(exclude_file='user')
+        # 存储数据入库
+        print('存入数据库')
+        handle_file(os.listdir(base_dir))
+        # 清理数据
+        clean_dir(base_dir)
+        clean_dir(source_base_dir)
+
+
 
     else:
         for i in range(return_times):
@@ -366,7 +419,7 @@ def action():
 
 def action_two(fetch_method):
     """只获取所有作品信息"""
-    flag_num = 9
+    flag_num = 11
     chose_first = randint(1, 10)
     click_title_or_aweme = chose_first > flag_num
     return_times = 2 if click_title_or_aweme else 1
