@@ -23,8 +23,9 @@
                ┃┫┫ ┃┫┫
                ┗┻┛ ┗┻┛
 """
-from douyin.conver_encoding import clean_dir
-from douyin.drag_mouse import hua, tail_to_head, head_to_tail
+from douyin.drag_mouse import check_user_in_db
 
 if __name__ == '__main__':
-    hua(10, head_to_tail, step=2)
+    # hua(10, head_to_tail, step=2)
+
+    list(check_user_in_db())

@@ -25,10 +25,15 @@
 """
 # 屏幕分辨率
 import math
+import os
+import re
 import time
 from random import random, randrange, sample, choice, randint
 
 import pyautogui as m
+
+from douyin.conver_encoding import convert_file
+from tools.parser_config import get_db_tool
 
 width, height = m.size()
 
@@ -177,6 +182,77 @@ def random_read_aweme():
     back()
 
 
+def check_user_in_db():
+    """验证用户信息相关功能
+
+    如果用户存在在数据库，且有作品信息，则返回False
+    如果用户信息需要更新入库，则返回True
+    """
+    flag = True
+    convert_file()
+    base_dir = 'd:\\douyin2'
+    files = os.listdir(base_dir)
+
+    for file in files:
+        file_name = os.path.join(base_dir, file)
+        if os.path.isfile(file_name) and file.startswith('user'):
+            line = _get_last_line_in_file(file_name)
+            nickname = re.findall(r'"nickname":"(.*?)"', line)[0]
+            break
+
+    # 查询数据库
+    db_pool = get_db_tool()
+    conn = db_pool.connection()
+    cursor = conn.cursor()
+    sql = """SELECT u.nickname, u.suren_id, a.promotion_id
+FROM douyin_aweme AS a
+       INNER JOIN douyin_user AS u
+                  ON u.suren_id = a.suren_id
+                    AND u.nickname LIKE '%s%'"""
+    try:
+        cursor.execute(sql, nickname)
+        result = cursor.fetchall()
+        if not result or len(result) < 1:
+            flag = False
+    except:
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+    return flag
+
+
+def _get_last_line_in_file(file_name):
+    """获取文件最后一行"""
+    # 去除空行
+    new_file_name = file_name.replace('_', '-')
+    file1 = open(file_name, 'rt', encoding='utf-8')
+    file2 = open(new_file_name, 'wt', encoding='utf-8')
+    try:
+        for line in file1.readlines():
+            new_line = line.strip()
+            if new_line:  # 空行不插入
+                file2.write(line)
+    finally:
+        file1.close()
+        file2.close()
+    os.remove(file_name)
+
+    with open(new_file_name, 'rb') as f:
+        off = -50
+        while True:
+            f.seek(off, 2)
+            lines = f.readlines()
+            lines = [line.strip() for line in lines]
+            if len(lines) >= 2:
+                last_line = str(lines[-1].decode('utf-8'))
+                break
+            else:
+                off *= 2
+
+    return last_line
+
+
 def fly_up_to_get_all_aweme(return_times=1):
     """向上滑动获取所有作品
 
@@ -206,6 +282,13 @@ def fly_up_to_get_all_aweme(return_times=1):
         time.sleep(time_10)
 
 
+def _back_for_times(return_times):
+    """根据次数返回"""
+    for i in range(return_times):
+        back()
+        time.sleep(time_10)
+
+
 def get_suren_info(*args, **kwargs):
     """获取素人信息，判断是否有橱窗
 
@@ -214,6 +297,11 @@ def get_suren_info(*args, **kwargs):
     return_times = kwargs.get('return_times')
     if return_times is None:
         raise Exception('返回次数必须输入')
+    # 判断用户是否已经在数据库中，且包含作品信息
+    if not check_user_in_db():
+        print('用户已经在数据库中存在，返回消息列表')
+        _back_for_times(return_times)
+        return
     # 判断是否有商品橱窗
     focus_console()
     has_aweme = int(input('请判断是否有橱窗'))
