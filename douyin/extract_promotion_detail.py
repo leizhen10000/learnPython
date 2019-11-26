@@ -294,10 +294,7 @@ def handle_file(files):
 
 # # 转换 utf-16 为 utf-8
 # success = convert_file()
-# # time.sleep(1)
-# # if success:
 # handle_file(os.listdir(base_dir))
-# # 清理数据
 # clean_dir(base_dir)
 # clean_dir(source_base_dir)
 

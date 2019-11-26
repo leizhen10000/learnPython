@@ -36,12 +36,15 @@ import pyautogui as m
 
 from douyin.conver_encoding import convert_file, clean_dir
 from douyin.extract_promotion_detail import handle_file
+from tools import logger
 from tools.parser_config import get_db_tool
 
 width, height = m.size()
 
-
 # m.moveTo(300, 300, duration=.25)
+
+log = logger.logger
+
 
 def draw_cycle():
     r = 250
@@ -185,16 +188,16 @@ def random_read_aweme():
     back()
 
 
-# lock = threading.RLock()
+lock = threading.RLock()
 
 
 def _write_to_new_file(filename, new_filename):
     """去除空行，写入新文件"""
-    # id = threading.currentThread().getName()
-    # lock.acquire()
+    id = threading.currentThread().getName()
+    lock.acquire()
 
     file1 = open(filename, 'rt', encoding='utf-8')
-    file2 = open(new_filename, 'w', encoding='utf-8')
+    file2 = open(new_filename, 'wt', encoding='utf-8')
     try:
         for line in file1:
             new_line = line.strip()
@@ -203,8 +206,8 @@ def _write_to_new_file(filename, new_filename):
     finally:
         file1.close()
         file2.close()
-    # lock.release()
-    # print(f"Thead {id} exit")
+    lock.release()
+    print(f"Thead {id} exit")
 
 
 def _read_from_new_file(new_filename):
@@ -241,30 +244,38 @@ def check_user_in_db():
 
     for file in files:
         file_name = os.path.join(base_dir, file)
-        if os.path.isfile(file_name) and file.startswith('user'):
+        if os.path.isfile(file_name) and file.startswith('user') and '_' in file:
             line = get_last_line_in_file(file_name)
             nickname = re.findall(r'"nickname":"(.*?)"', line)
             print('=' * 20)
-            print(nickname)
+            print(f'作者名称{nickname}')
             if nickname is None or len(nickname) < 1:
                 return flag
             break
+    else:
+        log.error('当前文件夹没用内容，请检查')
+        return flag
 
     # 查询数据库
     db_pool = get_db_tool()
     conn = db_pool.connection()
     cursor = conn.cursor()
-    sql = """SELECT u.nickname, u.suren_id, a.promotion_id
+    sql = """SELECT u.nickname, u.suren_id, COUNT(a.aweme_id) AS a_num 
 FROM douyin_aweme AS a
        INNER JOIN douyin_user AS u
                   ON u.suren_id = a.suren_id
-                    AND u.nickname = %s """
+                    AND u.nickname = %s 
+GROUP BY a.suren_id
+HAVING COUNT(a.aweme_id) > 21
+"""
     try:
         cursor.execute(sql, nickname)
         result = cursor.fetchall()
         if not result or len(result) < 1:
-            print(f'用户 {nickname} 不在数据库中')
+            log.info(f'用户 {nickname} 不在数据库中')
             flag = False
+        else:
+            log.info(f'用户 {nickname} 有 {result[0][2]} 作品')
     except:
         traceback.print_exc()
         conn.rollback()
@@ -279,13 +290,15 @@ def get_last_line_in_file(file_name):
     # 去除空行
     new_filename = file_name.replace('_', '-')
 
-    # threading.Thread(target=_write_to_new_file, args=(file_name, new_filename)).start()
-    _write_to_new_file(file_name, new_filename)
+    threading.Thread(target=_write_to_new_file, args=(file_name, new_filename)).start()
+
+    # _write_to_new_file(file_name, new_filename)
     time.sleep(2)
     last_line = _read_from_new_file(new_filename)
 
     # 删除旧文件
-    os.remove(file_name)
+    # os.remove(file_name)
+    # 数据量每次都很小，没必要删除，不然容易有异常
 
     return last_line
 

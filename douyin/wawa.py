@@ -23,9 +23,21 @@
                ┃┫┫ ┃┫┫
                ┗┻┛ ┗┻┛
 """
-from douyin.drag_mouse import check_user_in_db
+import time
+
+import pyautogui
+
+from douyin.drag_mouse import check_user_in_db, hua, head_to_tail, back, focus_console
 
 if __name__ == '__main__':
     # hua(10, head_to_tail, step=2)
+    #
+    # focus_console()
+    # pyautogui.moveTo(1004, 633)
+    # x = input('轻移动鼠标到某个标题栏：')
+    # if x:
+    #     pyautogui.click(pyautogui.position())
+    #
+    # time.sleep(.5)
 
     print(check_user_in_db())
