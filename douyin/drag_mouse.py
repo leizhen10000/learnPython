@@ -310,7 +310,7 @@ def fly_up_to_get_all_aweme(return_times=1):
     """
     m.moveTo(console[0], console[1])
     m.click(console[0], console[1])
-    aweme_num = int(input('请输入作品总数：'))
+    aweme_num = int(input('>>> 请输入作品总数：'))
     if aweme_num > 20:
         hua(aweme_num, tail_to_head, step=7)
     if return_times == 1:
@@ -324,7 +324,7 @@ def fly_up_to_get_all_aweme(return_times=1):
         # 设置随机访问视频
         tea = randint(1, 10)
         if tea > 8:
-            print('进入查看视频')
+            log.info('进入查看视频')
             random_read_aweme()
 
         # 返回消息列表
@@ -346,13 +346,14 @@ def get_suren_info(*args, **kwargs):
     """
     return_times = kwargs.get('return_times')
     if return_times is None:
+        log.error('返回次数必须给定')
         raise Exception('返回次数必须输入')
     source_base_dir = 'D:\\douyin'
     base_dir = 'D:\\douyin2'
     time.sleep(.5)
     # 判断用户是否已经在数据库中，且包含作品信息
     if check_user_in_db():
-        print('用户已经在数据库中存在，返回消息列表')
+        log.info('用户已经在数据库中存在，返回消息列表')
         _back_for_times(return_times)
         # 清理数据
         clean_dir(base_dir)
@@ -360,20 +361,20 @@ def get_suren_info(*args, **kwargs):
         return
     # 判断是否有商品橱窗
     focus_console()
-    has_aweme = int(input('请判断是否有橱窗'))
+    has_aweme = int(input('>>> 请判断是否有橱窗：'))
     if has_aweme:
         # 点击橱窗
         m.moveTo(aweme_list_button[0], aweme_list_button[1])
-        click_or_not = int(input('是否自由点击橱窗'))
+        click_or_not = int(input('>>> 是否自由点击橱窗: '))
         if click_or_not:
-            input('点击完成？')
+            log.info('点击完成？')
             focus_console()
         else:
             to_x, to_y = m.position()
             m.click(to_x, to_y)
         time.sleep(time_5)
         focus_console()
-        promotion_amount = int(input('商品总数:'))
+        promotion_amount = int(input('>>> 商品总数: '))
         if promotion_amount > 10:
             hua(promotion_amount, tail_to_head_faster, step=8)
         # 返回作品界面
@@ -385,7 +386,7 @@ def get_suren_info(*args, **kwargs):
 
         convert_file(exclude_file='user')
         # 存储数据入库
-        print('存入数据库')
+        log.info('存入数据库')
         handle_file(os.listdir(base_dir))
         # 清理数据
         clean_dir(base_dir)
@@ -412,7 +413,7 @@ def action():
         m.click(aweme_one[0], aweme_one[1], duration=time_1)
     else:
         m.moveTo(aweme_one[0], aweme_one[1] - 200)
-        move_first = input('是否需要移动到第一个视频')
+        move_first = input('>>> 是否需要移动到第一个视频：')
         if move_first:
             first_x, first_y = m.position()
             m.click(first_x, first_y)
@@ -432,21 +433,21 @@ def action():
 
 def action_two(fetch_method):
     """只获取所有作品信息"""
-    flag_num = 11
+    flag_num = 9
     chose_first = randint(1, 10)
     click_title_or_aweme = chose_first > flag_num
     return_times = 2 if click_title_or_aweme else 1
     if click_title_or_aweme:  # todo: 如果点击被封了，就走下面的逻辑
-        print('点击头像进入视频后，再进入主页')
+        log.info('点击头像进入视频后，再进入主页')
         m.click(aweme_one[0], aweme_one[1], duration=time_1)
         time.sleep(time_20 + time_3)
         # fly_left()  # 向左滑动，进入主页
         click_avatar()  # 点击头像，进入主页
     else:
-        print('直接进入主页')
+        log.info('直接进入主页')
         focus_console()
         m.moveTo(aweme_one[0], aweme_one[1] - 200)
-        move_first = input('移动到第一个视频：')
+        move_first = input('>>> 移动到第一个视频：')
         if move_first:
             first_x, first_y = m.position()
             m.click(first_x, first_y)
@@ -460,15 +461,15 @@ def action_two(fetch_method):
     click_title_or_aweme_second = chose_second > flag_num
     return_times_second = 2 if click_title_or_aweme_second else 1
     if click_title_or_aweme_second:
-        print('点击头像进入视频后，再进入主页')
+        log.info('点击头像进入视频后，再进入主页')
         m.click(aweme_two[0], aweme_two[1], duration=0.2 + random() / 3.0)
         time.sleep(time_20 + time_3)
         click_avatar()  # 点击头像，进入主页
     else:
-        print('直接进入主页')
+        log.info('直接进入主页')
         focus_console()
         m.moveTo(aweme_two[0] + 30 + randint(3, 8), aweme_two[1] - 103)
-        move_second = input('移动到第二个视频：')
+        move_second = input('>>> 移动到第二个视频：')
         if move_second:
             second_x, second_y = m.position()
             m.click(second_x, second_y)
@@ -482,16 +483,16 @@ def action_two(fetch_method):
     click_title_or_aweme_third = chose_third > flag_num
     return_times_third = 2 if click_title_or_aweme_third else 1
     if click_title_or_aweme_third:
-        print('点击头像进入视频后，再进入主页')
+        log.info('点击头像进入视频后，再进入主页')
         m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 2.0)
         time.sleep(time_20 + time_3)
         # fly_left()  # 向左滑动，进入主页
         click_avatar()  # 点击头像，进入主页
     else:
-        print('直接进入主页')
+        log.info('直接进入主页')
         focus_console()
         m.moveTo(aweme_three[0], aweme_three[1] - 150)
-        move_third = input('移动到第三个视频：')
+        move_third = input('>>> 移动到第三个视频：')
         if move_third:
             third_x, third_y = m.position()
             m.click(third_x, third_y)
@@ -505,12 +506,12 @@ if __name__ == '__main__':
     roll_times = 0
     while True:
         focus_console()
-        is_continue = int(input('是否继续'))
+        is_continue = int(input('>>> 是否继续：'))
         if is_continue:
             # m.hotkey('alt', 'tab')
             roll_page()
             roll_times += 1
-            print(f'翻页次数 {roll_times}')
+            log.info(f'翻页次数 {roll_times}')
             # action() # 执行步骤一
             action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
 
