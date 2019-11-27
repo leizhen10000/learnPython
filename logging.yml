@@ -45,8 +45,12 @@ loggers:
     propagate: yes
   tou:
     level: DEBUG
+    handlers: [info_file_handler, debug_file_handler, console]
+    propagate: yes
+  wei:
+    level: DEBUG
     handlers: [info_file_handler, debug_file_handler]
     propagate: yes
 root:
   level: DEBUG
-  handlers: [console, console_err, error_file_handler]
+  handlers: [console_err, error_file_handler]

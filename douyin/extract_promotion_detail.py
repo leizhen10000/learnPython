@@ -33,10 +33,10 @@ from datetime import datetime
 from openpyxl import Workbook
 
 from douyin.conver_encoding import convert_file, clean_dir
-from tools import logger
+from tools.logger import logger_wei as logger
 from tools.parser_config import get_db_tool
 
-log = logger.logger
+log = logger
 
 
 def create_excel(file_path):
@@ -85,7 +85,7 @@ def format_promotion(json_data):
 
 def format_user_info(json_data):
     result = json.loads(json_data)
-    logger.debug('用户信息')
+    log.debug('用户信息')
     logger.debug(result)
     user = result['user']
     uid = user.get('uid')

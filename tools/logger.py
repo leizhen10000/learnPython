@@ -33,19 +33,22 @@ with open('../logging.yml', 'r') as f:
     logging.config.dictConfig(config)
 
 logger = logging.getLogger('tou')
+logger_wei = logging.getLogger('wei')
 
 
-def debug(*args):
-    return logger.debug(*args)
+class Logger():
 
+    def __init__(self, log):
+        self.logger = log
 
-def info(*args):
-    return logger.info(*args)
+    def debug(self, *args):
+        return self.logger.debug(*args)
 
+    def info(self, *args):
+        return self.logger.info(*args)
 
-def warn(*args):
-    return logger.warning(*args)
+    def warn(self, *args):
+        return self.logger.warning(*args)
 
-
-def error(*args, **kwargs):
-    return logger.error(*args, **kwargs)
+    def error(self, *args, **kwargs):
+        return self.error(*args, **kwargs)

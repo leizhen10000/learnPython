@@ -38,14 +38,14 @@ import pyautogui as m
 
 from douyin.conver_encoding import convert_file, clean_dir
 from douyin.extract_promotion_detail import handle_file
-from tools import logger
+from tools.logger import logger
 from tools.parser_config import get_db_tool
 
 width, height = m.size()
 
 # m.moveTo(300, 300, duration=.25)
 
-log = logger.logger
+log = logger
 
 
 def draw_cycle():
@@ -234,13 +234,14 @@ def _read_from_new_file(new_filename):
     return last_line
 
 
-def _check_convert_file_exits(times=5, file_tags='all'):
+def _check_convert_file_exits(times=20, file_tags='all'):
     """检验转换的文件中存在
 
     :param file_tags: 文件标签，默认 all：所有文件
     """
     has_file = False
     files = None
+    cur = time.time()
     while times > 0:
         time.sleep(.3)
         files = os.listdir(base_dir)
@@ -251,6 +252,7 @@ def _check_convert_file_exits(times=5, file_tags='all'):
         else:
             has_file = True
             break
+    log.info(f'获取标签为 {file_tags} 的文件时长：{time.time() - cur}')
     if not has_file or files is None:
         log.error(f'没有获取到标签为 {file_tags} 的文件，请检查')
         raise ValueError('没有获取到解析后的文件，请检查 base_dir 中内容')
@@ -309,6 +311,7 @@ def check_user_in_db():
                 user_info['with_fusion_shop_entry'] = re.findall(
                     r'"with_fusion_shop_entry":(.*?),', line)[0]
                 user_info['aweme_count'] = re.findall(r'"aweme_count":(\d+)', line)[0]
+                aweme_count = user_info['aweme_count']
                 break
     else:
         return user_info
@@ -324,9 +327,10 @@ FROM douyin_aweme AS a
                     AND u.nickname = %s 
 GROUP BY a.suren_id
 HAVING COUNT(a.aweme_id) > 21
+OR COUNT(a.aweme_id) = %s
 """
     try:
-        cursor.execute(sql, nickname)
+        cursor.execute(sql, (nickname, int(aweme_count)))
         result = cursor.fetchall()
         if not result or len(result) < 1:
             log.info(f'用户 {nickname} 不在数据库中')
@@ -437,6 +441,7 @@ def get_suren_info(*args, **kwargs):
     if has_shop_entry:
         # 点击橱窗
         m.moveTo(aweme_list_button[0], aweme_list_button[1])
+        focus_console()
         click_or_not = int(input('>>> 橱窗 调整1 or 不调整 0 '))
         to_x, to_y = m.position()
         m.click(to_x, to_y)
@@ -469,9 +474,9 @@ def get_suren_info(*args, **kwargs):
         aweme_count = int(aweme_count)
 
     if has_shop_entry or aweme_count:
-        log.info(f'作品数量为 {aweme_count}, 开始滑动')
         # 作品向上滑动
         fly_up_to_get_all_aweme(aweme_count, return_times)
+        log.info(f'作品数量为 {aweme_count}, 开始滑动')
 
         convert_file(include='zuopin')
         # 存储数据入库
@@ -481,6 +486,7 @@ def get_suren_info(*args, **kwargs):
         clean_dir(base_dir)
         clean_dir(source_base_dir)
     else:
+        log.info(f'用户 {user_info["name"]}')
         for i in range(return_times):
             back()
             time.sleep(time_10)
@@ -612,7 +618,7 @@ def action_two(fetch_method):
     log.info('=' * 50)
     # 点击第三个视频
     fetch_third_user(flag_num, fetch_method)
-    delete_user_in_message()
+    # delete_user_in_message()
     log.info('=' * 50)
     # 点击第二个视频
     # fetch_second_user(flag_num, fetch_method)
