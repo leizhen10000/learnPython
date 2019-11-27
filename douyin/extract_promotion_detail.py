@@ -99,6 +99,21 @@ def format_user_info(json_data):
     bind_phone = bind_phone if bind_phone != '#' else ''
     signature = user.get('signature')  # 签名，可能包含手机号和微信号
     nickname = user.get('nickname')  # 昵称
+    birthday = user.get('birthday')  # 出生日期
+    age = None  # 年龄
+    if birthday:
+        # 计算年龄
+        now = datetime.now().year
+        birthday_year = int(birthday[:4])
+        age = now - birthday_year
+    city = user.get('city')  # 城市
+    school_name = user.get('school_name')
+    college_name = user.get('college_name')  # 大学
+    if not school_name:
+        school_name = college_name
+    gender = user.get('gender')  # 性别，1：男，2：女
+    if gender:
+        gender = '男' if int(gender) == 1 else '女'
     unique_id = user.get('unique_id', '')  # 抖音号
     short_id = user.get('short_id', '')  # 抖音号2
     if not unique_id:
@@ -111,7 +126,8 @@ def format_user_info(json_data):
 
     user_dict = {'素人id': uid, '': unique_id, '获赞量': total_favorited, '关注量': following_count, '作品数': aweme_count,
                  '动态数': dongtai_count, '粉丝量': follower_count, '喜欢量': favoriting_count, '绑定手机': bind_phone,
-                 '签名': signature, '昵称': nickname, '是否有商品橱窗': with_fusion_shop_entry, '用户详情链接': user_url,
+                 '签名': signature, '昵称': nickname, '年龄': age, '性别': gender, '城市': city, '大学': school_name,
+                 '是否有商品橱窗': with_fusion_shop_entry, '用户详情链接': user_url,
                  '用户详情二维码链接': user_qr_code_url}
     logger.info('用户信息-提取内容')
     logger.info(user_dict)
@@ -231,8 +247,7 @@ def handle_file(files):
                 for line in f:
                     line = line.strip().strip('\n')
                     if not line or '参数不合法' in line:
-                        logger.error(f'文件当前行 {file_name} 为空或参数不合法，请检查')
-                        logger.error(line)
+                        logger.error(f'文件当前行 {file_name} 为空或参数不合法，请检查: {line}')
                         continue
                     suren_infos = list(format_user_info(line))
 
@@ -248,8 +263,8 @@ def handle_file(files):
                     # 如果没有当天的数据则存入/更新数据库
                     suren_insert = """REPLACE INTO douyin_user
                 (suren_id, douyin_id,total_favourited, following_count, aweme_count, dongtai_count, follower_count,
-                 favouriting_count, bind_phone, signature, nickname, with_fusion_shop_entry, url, qrcode_url, update_time)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                 favouriting_count, bind_phone, signature, nickname, age, gender, city, college, with_fusion_shop_entry, url, qrcode_url, update_time)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     try:
                         cursor.executemany(query=suren_insert, args=insert_args)
                         conn.commit()
@@ -277,8 +292,8 @@ def handle_file(files):
                     logger.info(f'本次录入的新作品，id： {[item[0] for item in new_aweme_args]}')
                     aweme_insert_sql = """REPLACE INTO douyin_aweme
         (aweme_id, suren_id, digg_count, comment_count, share_count, download_count,
-         forward_count, promotion_id, product_id,tag, `desc`, create_time, update_time)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s,%s, %s, %s, %s, NOW())"""
+         forward_count, promotion_id, product_id, tag, `desc`, create_time, update_time)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     try:
                         cursor.executemany(aweme_insert_sql, new_aweme_args)
                         conn.commit()
@@ -290,7 +305,6 @@ def handle_file(files):
             # df.to_excel(f'{user_id}_zuopin.xlsx', sheet_name='作品信息')
 
     conn.close()
-
 
 # # 转换 utf-16 为 utf-8
 # success = convert_file()

@@ -24,6 +24,8 @@
                ┗┻┛ ┗┻┛
 """
 # 屏幕分辨率
+import ctypes
+import json
 import math
 import os
 import re
@@ -68,10 +70,11 @@ head = x + 762, y + 81
 tail = x + 762, y + 1630
 aweme_one = x + 200 + randint(1, 5), y + 400
 aweme_two = x + 130 + randint(5, 10), y + 850
-aweme_three = x + 135 + randint(30, 170), y + 1400
+aweme_three = x + 135 + randint(-60, 190), y + 1400
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
 avatar = x + 976 + randint(-3, 3), y + 987 + randint(-3, 3)
+delete_x, delete_y = x + 483 + randint(-80, 70), y + 1129 + randint(-5, 20)
 
 console = 2589, 2055
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
@@ -150,8 +153,8 @@ def hua(exec_count, hua_method, step=9):
 
 def click_avatar():
     m.click(avatar[0], avatar[1])
-    print('返回再点击，等待3s')
-    time.sleep(3 + randint(1, 5) / 5.0)
+    print('返回再点击，等待2s')
+    time.sleep(2 + randint(3, 5) / 20.0)
     back()
     time.sleep(time_5)
     m.click(avatar[0], avatar[1])
@@ -236,11 +239,18 @@ def check_user_in_db():
     如果用户存在在数据库，且有作品信息，则返回False
     如果用户信息需要更新入库，则返回True
     """
-    flag = True
+    user_info = {'flag': True}
     convert_file()
     base_dir = 'd:\\douyin2'
+    time.sleep(.8)
     files = os.listdir(base_dir)
     nickname = None
+    with_fusion_shop_entry = None
+    aweme_count = None
+
+    if not files or len(files) == 0:
+        log.error('没有获取到文件，请检查')
+        raise Exception('没有获取到解析后的文件，请检查 base_dir 中内容')
 
     for file in files:
         file_name = os.path.join(base_dir, file)
@@ -248,13 +258,27 @@ def check_user_in_db():
             line = get_last_line_in_file(file_name)
             nickname = re.findall(r'"nickname":"(.*?)"', line)
             print('=' * 20)
-            print(f'作者名称{nickname}')
             if nickname is None or len(nickname) < 1:
-                return flag
-            break
-    else:
-        log.error('当前文件夹没用内容，请检查')
-        return flag
+                print(f'作者名称{nickname}')
+                return user_info
+            else:
+                user_info['name'] = nickname[0]
+                user_info['with_fusion_shop_entry'] = re.findall(
+                    r'"with_fusion_shop_entry":(.*?),', line)[0]
+                user_info['aweme_count'] = re.findall(r'"aweme_count":(\d+)', line)[0]
+                break
+    for file in files:
+        file_name = os.path.join(base_dir, file)
+        if os.path.isfile(file_name) and 'promotion' in file_name:
+            with open(file_name, encoding='utf-8') as f:
+                lines = f.readlines()
+                lines = [line.strip() for line in lines]
+                real_lines = list(filter(lambda x: x, lines))
+                last_line = str(real_lines[-1])
+                promotion_info = json.loads(last_line)
+                count = promotion_info.get('count')
+                user_info['promotion_count'] = count
+                break
 
     # 查询数据库
     db_pool = get_db_tool()
@@ -282,7 +306,7 @@ HAVING COUNT(a.aweme_id) > 21
     finally:
         cursor.close()
         conn.close()
-    return flag
+    return user_info
 
 
 def get_last_line_in_file(file_name):
@@ -293,7 +317,7 @@ def get_last_line_in_file(file_name):
     threading.Thread(target=_write_to_new_file, args=(file_name, new_filename)).start()
 
     # _write_to_new_file(file_name, new_filename)
-    time.sleep(2)
+    time.sleep(.5)
     last_line = _read_from_new_file(new_filename)
 
     # 删除旧文件
@@ -361,8 +385,8 @@ def get_suren_info(*args, **kwargs):
         return
     # 判断是否有商品橱窗
     focus_console()
-    has_aweme = int(input('>>> 请判断是否有橱窗：'))
-    if has_aweme:
+    has_aweme = int(input('>>> 获取 橱窗 1 or 作品 2 or 返回 0：'))
+    if has_aweme == 1:
         # 点击橱窗
         m.moveTo(aweme_list_button[0], aweme_list_button[1])
         click_or_not = int(input('>>> 是否自由点击橱窗: '))
@@ -380,7 +404,7 @@ def get_suren_info(*args, **kwargs):
         # 返回作品界面
         back()
         time.sleep(time_4)
-
+    if has_aweme:
         # 作品向上滑动
         fly_up_to_get_all_aweme(return_times)
 
@@ -391,9 +415,6 @@ def get_suren_info(*args, **kwargs):
         # 清理数据
         clean_dir(base_dir)
         clean_dir(source_base_dir)
-
-
-
     else:
         for i in range(return_times):
             back()
@@ -431,9 +452,8 @@ def action():
     # time.sleep(time_10)
 
 
-def action_two(fetch_method):
-    """只获取所有作品信息"""
-    flag_num = 9
+def fetch_first_user(flag_num, fetch_method):
+    """点击第一个用户，获取信息"""
     chose_first = randint(1, 10)
     click_title_or_aweme = chose_first > flag_num
     return_times = 2 if click_title_or_aweme else 1
@@ -456,7 +476,9 @@ def action_two(fetch_method):
     # 选择执行的功能
     fetch_method(return_times=return_times)
 
-    # 点击第二个视频
+
+def fetch_second_user(flag_num, fetch_method):
+    """点击第二个用户，获取信息"""
     chose_second = randint(1, 10)
     click_title_or_aweme_second = chose_second > flag_num
     return_times_second = 2 if click_title_or_aweme_second else 1
@@ -478,7 +500,9 @@ def action_two(fetch_method):
     # 执行滑动判断逻辑
     fetch_method(return_times=return_times_second)
 
-    # 点击第三个视频
+
+def fetch_third_user(flag_num, fetch_method):
+    """点击第三个用户，获取信息"""
     chose_third = randint(1, 10)
     click_title_or_aweme_third = chose_third > flag_num
     return_times_third = 2 if click_title_or_aweme_third else 1
@@ -492,28 +516,57 @@ def action_two(fetch_method):
         log.info('直接进入主页')
         focus_console()
         m.moveTo(aweme_three[0], aweme_three[1] - 150)
-        move_third = input('>>> 移动到第三个视频：')
-        if move_third:
-            third_x, third_y = m.position()
-            m.click(third_x, third_y)
-        else:
-            m.click(aweme_three[0], aweme_three[1] - 150)
+        # move_third = input('>>> 移动到第三个视频：')
+        # if move_third:
+        third_x, third_y = m.position()
+        m.click(third_x, third_y, duration=.3)
+        # else:
+        #     m.click(aweme_three[0], aweme_three[1] - 150)
     # 执行滑动判断逻辑
     fetch_method(return_times=return_times_third)
 
 
+def delete_user_in_message():
+    """删除最下面一个用户信息，前提是已经读取过该用户信息"""
+    time.sleep(.3)
+    convertX, convertY = 65536 * aweme_three[0] // 3840 + 1, 65536 * aweme_three[1] // 2160 + 1
+    ctypes.windll.user32.SetCursorPos(aweme_three[0], aweme_three[1])
+    ctypes.windll.user32.mouse_event(2, convertX, convertY, 0, 0)
+    time.sleep(0.8)
+    ctypes.windll.user32.mouse_event(4, convertX, convertY, 0, 0)
+
+    m.moveTo(delete_x, delete_y, duration=.1)
+    m.click(delete_x, delete_y)
+
+
+def action_two(fetch_method):
+    """只获取所有作品信息"""
+    flag_num = 8
+
+    # 点击第三个视频
+    fetch_third_user(flag_num, fetch_method)
+    delete_user_in_message()
+    # 点击第二个视频
+    # fetch_second_user(flag_num, fetch_method)
+    # 点击第一个视频
+    # fetch_first_user(flag_num, fetch_method)
+
+
 if __name__ == '__main__':
-    roll_times = 0
+    # roll_times = 0
     while True:
-        focus_console()
-        is_continue = int(input('>>> 是否继续：'))
-        if is_continue:
-            # m.hotkey('alt', 'tab')
-            roll_page()
-            roll_times += 1
-            log.info(f'翻页次数 {roll_times}')
-            # action() # 执行步骤一
-            action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+        action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+    #     focus_console()
+    #     is_continue = int(input('>>> 是否继续：'))
+    #     if is_continue:
+    #         # m.hotkey('alt', 'tab')
+    #         # roll_page()
+    #         # roll_times += 1
+    #         # log.info(f'翻页次数 {roll_times}')
+    #         # action() # 执行步骤一
+    #         action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+    #     else:
+    #         break
 
     # m.hotkey('alt', 'tab')
     # # draw_cycle()
