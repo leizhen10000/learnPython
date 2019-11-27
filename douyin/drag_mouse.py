@@ -240,19 +240,21 @@ def _check_convert_file_exits(times=5, file_tags='all'):
     :param file_tags: 文件标签，默认 all：所有文件
     """
     has_file = False
+    files = None
     while times > 0:
         time.sleep(.3)
-        files = os.listdir()
+        files = os.listdir(base_dir)
         if file_tags != 'all':
             files = list(filter(lambda x: file_tags in x, files))
         if not files or len(files) == 0:
             times -= 1
         else:
             has_file = True
-            return files
-    if not has_file:
+            break
+    if not has_file or files is None:
         log.error(f'没有获取到标签为 {file_tags} 的文件，请检查')
         raise ValueError('没有获取到解析后的文件，请检查 base_dir 中内容')
+    return files
 
 
 def get_promotion_count(has_shop_entry):
@@ -365,8 +367,13 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     :param aweme_num 作品总数，用户判断滑动次数
     :param return_times 判断返回上一页时，是返回 一次还是两次
     """
+    if aweme_num > 250:
+        focus_console()
+        aweme_num = int(input(f'当前作品数量超过300，请确认数值'))
     if aweme_num > 20:
-        hua(aweme_num, tail_to_head, step=7)
+        hua(aweme_num, tail_to_head, step=6)
+    else:
+        log.info('作品数量小于20')
     if return_times == 1:
         # 返回一次
         back()
@@ -427,15 +434,6 @@ def get_suren_info(*args, **kwargs):
     else:
         has_shop_entry = True if has_shop_entry == 'true' else False
 
-    # 获取商品总数
-    promotion_count = get_promotion_count(has_shop_entry)
-    if promotion_count is None and has_shop_entry:
-        log.info('获取商品总数失败')
-        focus_console()
-        promotion_count = int(input('>>> 商品总数: '))
-    else:
-        promotion_count = int(promotion_count)
-
     if has_shop_entry:
         # 点击橱窗
         m.moveTo(aweme_list_button[0], aweme_list_button[1])
@@ -443,22 +441,35 @@ def get_suren_info(*args, **kwargs):
         to_x, to_y = m.position()
         m.click(to_x, to_y)
         time.sleep(time_5)
+
+        # 获取商品总数
+        promotion_count = get_promotion_count(has_shop_entry)
+        if promotion_count is None and has_shop_entry:
+            log.info('获取商品总数失败')
+            focus_console()
+            promotion_count = int(input('>>> 商品总数: '))
+        else:
+            promotion_count = int(promotion_count)
+
         if promotion_count >= 20:
             hua(promotion_count, tail_to_head_faster, step=8)
         # 返回作品界面
         back()
         time.sleep(time_4)
+    else:
+        log.info("用户没有橱窗信息")
 
     # 获取作品信息
     aweme_count = user_info.get('aweme_count')
     if aweme_count is None:
         log.info('没有获取作品数量')
         m.click(console[0], console[1])
-        aweme_num = int(input('>>> 请输入作品总数：'))
+        aweme_count = int(input('>>> 请输入作品总数：'))
     else:
         aweme_count = int(aweme_count)
 
     if has_shop_entry or aweme_count:
+        log.info(f'作品数量为 {aweme_count}, 开始滑动')
         # 作品向上滑动
         fly_up_to_get_all_aweme(aweme_count, return_times)
 
@@ -613,7 +624,7 @@ if __name__ == '__main__':
     roll_times = 0
     while True:
         roll_times += 1
-        if roll_times < 6:
+        if roll_times < 1:
             action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
         else:
             focus_console()
