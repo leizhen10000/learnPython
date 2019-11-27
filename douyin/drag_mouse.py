@@ -98,13 +98,27 @@ def back():
     m.click(x, y)
 
 
+def sleep(seconds):
+    time.sleep(seconds)
+    log.debug(f'时长: {seconds}')
+
+
+def count_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        func(*args, **kwargs)
+        log.debug(f'{func.__name__} 执行时长：{time.time() - start_time:.2f}s')
+
+    return wrapper
+
+
 def fly_left():
     # 向左滑动
     m.moveTo(right[0], right[1], duration=time_1)
     m.dragTo(left[0] - 300, left[1], duration=time_3)
     # 返回再滑动
     back()
-    time.sleep(time_5)
+    sleep(time_5)
     m.moveTo(right[0], right[1], duration=time_1)
     m.dragTo(left[0] - 300, left[1], duration=time_3)
 
@@ -128,7 +142,7 @@ def tail_to_head():
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(1, 3) / 26.0)
-    time.sleep(time_2 + time_15 + randint(1, 10) / 15)
+    sleep(time_2 + time_15 + randint(1, 10) / 15)
 
 
 def tail_to_head_faster():
@@ -137,7 +151,7 @@ def tail_to_head_faster():
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(1, 3) / 25.0)
-    time.sleep(time_1 + randint(1, 10) / 15)
+    sleep(time_1 + randint(1, 10) / 15)
 
 
 def hua(exec_count, hua_method, step=9.0):
@@ -154,9 +168,9 @@ def hua(exec_count, hua_method, step=9.0):
 def click_avatar():
     m.click(avatar[0], avatar[1])
     print('返回再点击，等待2s')
-    time.sleep(2 + randint(3, 5) / 20.0)
+    sleep(2 + randint(3, 5) / 20.0)
     back()
-    time.sleep(time_5)
+    sleep(time_5)
     m.click(avatar[0], avatar[1])
 
 
@@ -185,9 +199,9 @@ def focus_console():
 
 def random_read_aweme():
     m.click(aweme_three[0] + randint(50, 350), aweme_three[1] + randint(-100, 0))
-    time.sleep(time_5)
+    sleep(time_5)
     m.doubleClick()
-    time.sleep(time_2)
+    sleep(time_2)
     back()
 
 
@@ -195,6 +209,7 @@ base_dir = 'D:\\douyin2'
 source_base_dir = 'D:\\douyin'
 
 
+@count_time
 def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     """检验转换的文件/源文件是否存在
 
@@ -210,9 +225,9 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     source_times = times
     while times > 0:
         if times > 15:
-            time.sleep(step_interval)
+            sleep(step_interval)
         else:
-            time.sleep(interval)
+            sleep(interval)
         source_files = os.listdir(source_base_dir)
         if file_tags != 'all':
             source_files = list(filter(lambda x: file_tags in x, source_files))
@@ -237,9 +252,9 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     convert_times = times
     while times > 0:
         if times > 15:
-            time.sleep(step_interval)
+            sleep(step_interval)
         else:
-            time.sleep(interval)
+            sleep(interval)
         convert_files = os.listdir(base_dir)
         if file_tags != 'all':
             convert_files = list(filter(lambda x: file_tags in x, convert_files))
@@ -255,6 +270,7 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     return convert_files
 
 
+@count_time
 def get_promotion_count(has_shop_entry):
     """获取商品总数"""
     # 没有商品橱窗，直接返回商品数为0
@@ -368,11 +384,11 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     if return_times == 1:
         # 返回一次
         back()
-        time.sleep(time_8 + randint(1, 2) / 10.0)
+        sleep(time_8 + randint(1, 2) / 10.0)
     elif return_times == 2:
         # 返回两次
         back()
-        time.sleep(time_10)
+        sleep(time_10)
         # 设置随机访问视频
         tea = randint(1, 10)
         if tea > 8:
@@ -381,16 +397,17 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
 
         # 返回消息列表
         back()
-        time.sleep(time_10)
+        sleep(time_10)
 
 
 def _back_for_times(return_times):
     """根据次数返回"""
     for i in range(return_times):
         back()
-        time.sleep(time_10)
+        sleep(time_10)
 
 
+@count_time
 def get_suren_info(*args, **kwargs):
     """获取素人信息，判断是否有橱窗
 
@@ -400,7 +417,7 @@ def get_suren_info(*args, **kwargs):
     if return_times is None:
         log.error('返回次数必须给定')
         raise Exception('返回次数必须输入')
-    time.sleep(.5)
+    sleep(.5)
     log.info('获取素人信息')
     # 判断用户是否已经在数据库中，且包含作品信息
     user_info = check_user_in_db()
@@ -431,7 +448,7 @@ def get_suren_info(*args, **kwargs):
         click_or_not = int(input('>>> 橱窗 调整1 or 不调整 0 '))
         to_x, to_y = m.position()
         m.click(to_x, to_y)
-        time.sleep(time_5)
+        sleep(time_5)
 
         # 获取商品总数
         promotion_count = get_promotion_count(has_shop_entry)
@@ -446,7 +463,7 @@ def get_suren_info(*args, **kwargs):
             hua(promotion_count, tail_to_head_faster, step=8)
         # 返回作品界面
         back()
-        time.sleep(time_4)
+        sleep(time_4)
     else:
         log.info("用户没有橱窗信息")
 
@@ -475,7 +492,7 @@ def get_suren_info(*args, **kwargs):
         log.info(f'用户 {user_info["name"]}')
         for i in range(return_times):
             back()
-            time.sleep(time_10)
+            sleep(time_10)
 
 
 def roll_page():
@@ -483,65 +500,16 @@ def roll_page():
     m.dragTo(tail[0], tail[1] + 50, duration=time_1)
 
 
-def fetch_first_user(flag_num, fetch_method):
-    """点击第一个用户，获取信息"""
-    chose_first = randint(1, 10)
-    click_title_or_aweme = chose_first > flag_num
-    return_times = 2 if click_title_or_aweme else 1
-    if click_title_or_aweme:  # todo: 如果点击被封了，就走下面的逻辑
-        log.info('点击头像进入视频后，再进入主页')
-        m.click(aweme_one[0], aweme_one[1], duration=time_1)
-        time.sleep(time_20 + time_3)
-        # fly_left()  # 向左滑动，进入主页
-        click_avatar()  # 点击头像，进入主页
-    else:
-        log.info('点击用户，直接进入主页')
-        focus_console()
-        m.moveTo(aweme_one[0], aweme_one[1] - 200)
-        move_first = input('>>> 移动到第一个视频：')
-        if move_first:
-            first_x, first_y = m.position()
-            m.click(first_x, first_y)
-        else:
-            m.click(aweme_one[0], aweme_one[1] - 200)
-    # 选择执行的功能
-    fetch_method(return_times=return_times)
-
-
-def fetch_second_user(flag_num, fetch_method):
-    """点击第二个用户，获取信息"""
-    chose_second = randint(1, 10)
-    click_title_or_aweme_second = chose_second > flag_num
-    return_times_second = 2 if click_title_or_aweme_second else 1
-    if click_title_or_aweme_second:
-        log.info('点击头像进入视频后，再进入主页')
-        m.click(aweme_two[0], aweme_two[1], duration=0.2 + random() / 3.0)
-        time.sleep(time_20 + time_3)
-        click_avatar()  # 点击头像，进入主页
-    else:
-        log.info('直接进入主页')
-        focus_console()
-        m.moveTo(aweme_two[0] + 30 + randint(3, 8), aweme_two[1] - 103)
-        move_second = input('>>> 移动到第二个视频：')
-        if move_second:
-            second_x, second_y = m.position()
-            m.click(second_x, second_y)
-        else:
-            m.click(aweme_two[0] + 30 + randint(3, 8), aweme_two[1] - 103)
-    # 执行滑动判断逻辑
-    fetch_method(return_times=return_times_second)
-
-
-def fetch_third_user(flag_num, fetch_method):
+def fetch_user(flag_num, fetch_method):
     """点击第三个用户，获取信息"""
-    time.sleep(.1)
+    sleep(.1)
     chose_third = randint(1, 10)
     click_title_or_aweme_third = chose_third > flag_num
     return_times_third = 2 if click_title_or_aweme_third else 1
     if click_title_or_aweme_third:
         log.info('点击头像进入视频后，再进入主页')
         m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 2.0)
-        time.sleep(time_20 + time_3)
+        sleep(time_20 + time_3)
         # fly_left()  # 向左滑动，进入主页
         click_avatar()  # 点击头像，进入主页
     else:
@@ -560,11 +528,11 @@ def fetch_third_user(flag_num, fetch_method):
 
 def delete_user_in_message():
     """删除最下面一个用户信息，前提是已经读取过该用户信息"""
-    time.sleep(.3)
+    sleep(.3)
     convertX, convertY = 65536 * aweme_three[0] // 3840 + 1, 65536 * aweme_three[1] // 2160 + 1
     ctypes.windll.user32.SetCursorPos(aweme_three[0], aweme_three[1])
     ctypes.windll.user32.mouse_event(2, convertX, convertY, 0, 0)
-    time.sleep(0.8)
+    sleep(0.8)
     ctypes.windll.user32.mouse_event(4, convertX, convertY, 0, 0)
 
     m.moveTo(delete_x, delete_y, duration=.1)
@@ -579,7 +547,7 @@ def action(fetch_method):
     start = time.time()
     log.info('=' * 50)
     # 点击第三个视频
-    fetch_third_user(flag_num, fetch_method)
+    fetch_user(flag_num, fetch_method)
     delete_user_in_message()
     log.info('=' * 50)
     log.info(f'执行时长：{time.time() - start:.2f}')
