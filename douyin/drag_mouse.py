@@ -192,46 +192,6 @@ def random_read_aweme():
 
 
 base_dir = 'D:\\douyin2'
-lock = threading.RLock()
-
-
-def _write_to_new_file(filename, new_filename):
-    """去除空行，写入新文件"""
-    id = threading.currentThread().getName()
-    lock.acquire()
-
-    file1 = open(filename, 'rt', encoding='utf-8')
-    file2 = open(new_filename, 'wt', encoding='utf-8')
-    try:
-        for line in file1:
-            new_line = line.strip()
-            if new_line:  # 空行不插入
-                file2.write(line)
-    finally:
-        file1.close()
-        file2.close()
-    lock.release()
-    print(f"Thead {id} exit")
-
-
-def _read_from_new_file(new_filename):
-    """从新文件中读取内容"""
-    # id = threading.currentThread().getName()
-    # lock.acquire()
-    with open(new_filename, 'rb') as f:
-        # off = -50
-        # while True:
-        # f.seek(off, 2)
-        lines = f.readlines()
-        lines = [line.strip() for line in lines]
-        last_line = str(lines[-1].decode('utf-8'))
-        # if len(lines) >= 2:
-        #     break
-        # else:
-        #     off *= 2
-    # lock.release()
-    # print(f'Thread {id} exit')
-    return last_line
 
 
 def _check_convert_file_exits(times=20, file_tags='all'):
@@ -301,16 +261,15 @@ def check_user_in_db():
     for file in files:
         file_name = os.path.join(base_dir, file)
         if os.path.isfile(file_name) and file.startswith('user') and '_' in file:
-            line = get_last_line_in_file(file_name)
-            nickname = re.findall(r'"nickname":"(.*?)"', line)
-            if nickname is None or len(nickname) < 1:
+            line_json = get_last_line_in_file(file_name)
+            nickname = line_json.get('nickname', '')
+            if not nickname or len(nickname) < 1:
                 log.info(f'作者名称{nickname}')
                 return user_info
             else:
-                user_info['name'] = nickname[0]
-                user_info['with_fusion_shop_entry'] = re.findall(
-                    r'"with_fusion_shop_entry":(.*?),', line)[0]
-                user_info['aweme_count'] = re.findall(r'"aweme_count":(\d+)', line)[0]
+                user_info['name'] = nickname
+                user_info['with_fusion_shop_entry'] = line_json.get('with_fusion_shop_entry')
+                user_info['aweme_count'] = line_json.get('aweme_count')
                 aweme_count = user_info['aweme_count']
                 break
     else:
@@ -349,20 +308,13 @@ OR COUNT(a.aweme_id) = %s
 
 def get_last_line_in_file(file_name):
     """获取文件最后一行"""
-    # 去除空行
-    new_filename = file_name.replace('_', '-')
-
-    threading.Thread(target=_write_to_new_file, args=(file_name, new_filename)).start()
-
-    # _write_to_new_file(file_name, new_filename)
-    time.sleep(.5)
-    last_line = _read_from_new_file(new_filename)
-
-    # 删除旧文件
-    # os.remove(file_name)
-    # 数据量每次都很小，没必要删除，不然容易有异常
-
-    return last_line
+    with open(file_name, encoding='utf-8') as f:
+        lines = f.readlines()
+        lines = [line.strip() for line in lines]
+        real_lines = list(filter(lambda x: x, lines))
+        last_line = str(real_lines[-1])
+        line_json = json.loads(last_line)
+        return line_json
 
 
 def fly_up_to_get_all_aweme(aweme_num, return_times=1):
@@ -371,9 +323,9 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     :param aweme_num 作品总数，用户判断滑动次数
     :param return_times 判断返回上一页时，是返回 一次还是两次
     """
-    if aweme_num > 250:
+    if aweme_num > 200:
         focus_console()
-        aweme_num = int(input(f'当前作品数量超过300，请确认数值'))
+        aweme_num = int(input(f'当前作品数量超过200，请确认数值'))
     if aweme_num > 20:
         hua(aweme_num, tail_to_head, step=6)
     else:
@@ -618,7 +570,7 @@ def action_two(fetch_method):
     log.info('=' * 50)
     # 点击第三个视频
     fetch_third_user(flag_num, fetch_method)
-    # delete_user_in_message()
+    delete_user_in_message()
     log.info('=' * 50)
     # 点击第二个视频
     # fetch_second_user(flag_num, fetch_method)

@@ -211,7 +211,7 @@ def handle_file(files):
                 for line in f:
                     line = line.strip().strip('\n')
                     if not line:
-                        logger.error(f'文件当前行 {file_name} 为空，请检查')
+                        logger.info(f'文件当前行 {file} 为空，请检查')
                         continue
                     promotion_infos = list(format_promotion(line))
                     # new_promotion_infos = list(
@@ -246,8 +246,11 @@ def handle_file(files):
             with open(file_dir, 'rt', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip().strip('\n')
-                    if not line or '参数不合法' in line:
-                        logger.error(f'文件当前行 {file_name} 为空或参数不合法，请检查: {line}')
+                    if not line:
+                        logger.info(f'文件当前行 {file_name} 为空')
+                        continue
+                    if '参数不合法' in line:
+                        logger.error(f'文件当前行 {file_name} 参数不合法，请检查: {line}')
                         continue
                     suren_infos = list(format_user_info(line))
 
@@ -282,7 +285,7 @@ def handle_file(files):
                 for line in f:
                     line = line.strip().strip('\n')
                     if not line:
-                        logger.error(f'文件当前行 {file_name} 为空，请检查')
+                        logger.info(f'文件当前行 {file_name} 为空，请检查')
                         continue
                     aweme_infos = list(form_aweme(line))
                     # 求差集，获取今天没有存储过的作品id
