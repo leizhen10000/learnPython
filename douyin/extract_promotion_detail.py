@@ -191,16 +191,16 @@ def handle_file(files):
     cursor = conn.cursor()
 
     # 查询 作品数据
-    aweme_query_sql = 'SELECT aweme_id FROM douyin_aweme WHERE DATEDIFF(update_time, NOW()) = 0'
-    cursor.execute(query=aweme_query_sql)
-    today_aweme_result = cursor.fetchall()
-    today_aweme_result = [item[0] for item in today_aweme_result]
+    # aweme_query_sql = 'SELECT aweme_id FROM douyin_aweme WHERE DATEDIFF(update_time, NOW()) = 0'
+    # cursor.execute(query=aweme_query_sql)
+    # today_aweme_result = cursor.fetchall()
+    # today_aweme_result = [item[0] for item in today_aweme_result]
 
     # 查询 商品数据
-    promotion_query_sql = "SELECT promotion_id FROM douyin_promotion WHERE DATEDIFF(update_time, NOW()) = 0"
-    cursor.execute(promotion_query_sql)
-    today_promotion_result = cursor.fetchall()
-    today_promotion_result = [item[0] for item in today_promotion_result]
+    # promotion_query_sql = "SELECT promotion_id FROM douyin_promotion WHERE DATEDIFF(update_time, NOW()) = 0"
+    # cursor.execute(promotion_query_sql)
+    # today_promotion_result = cursor.fetchall()
+    # today_promotion_result = [item[0] for item in today_promotion_result]
 
     for file in files:
         file_dir = os.path.join(base_dir, file)
@@ -214,8 +214,8 @@ def handle_file(files):
                         logger.error(f'文件当前行 {file_name} 为空，请检查')
                         continue
                     promotion_infos = list(format_promotion(line))
-                    new_promotion_infos = list(
-                        filter(lambda x: x['商品id'] not in today_promotion_result, promotion_infos))
+                    # new_promotion_infos = list(
+                    #     filter(lambda x: x['商品id'] not in today_promotion_result, promotion_infos))
                     promotion_insert_args = [
                         list(item.values()) for item in promotion_infos]  # todo：需要删除
                     for x in promotion_insert_args:
@@ -251,14 +251,14 @@ def handle_file(files):
                         continue
                     suren_infos = list(format_user_info(line))
 
-                    suren_ids = [item['素人id'] for item in suren_infos]
+                    # suren_ids = [item['素人id'] for item in suren_infos]
                     # 以天为日期查询，如果该素人数据在当天已经更新过，则不存入数据库
-                    suren_query = 'SELECT * FROM douyin_user WHERE suren_id = %s AND DATEDIFF(update_time, NOW()) = 0'
-                    cursor.executemany(query=suren_query, args=suren_ids)
-                    result = cursor.fetchall()
-                    if len(result) > 0:
-                        logger.warn(F'素人 {suren_infos[0]["素人id"]} 已经在今天录入了')
-                        # continue # todo: 需要修改
+                    # suren_query = 'SELECT * FROM douyin_user WHERE suren_id = %s AND DATEDIFF(update_time, NOW()) = 0'
+                    # cursor.executemany(query=suren_query, args=suren_ids)
+                    # result = cursor.fetchall()
+                    # if len(result) > 0:
+                    #     logger.warn(F'素人 {suren_infos[0]["素人id"]} 已经在今天录入了')
+                    # continue # todo: 需要修改
                     insert_args = [list(suren_info.values()) for suren_info in suren_infos]
                     # 如果没有当天的数据则存入/更新数据库
                     suren_insert = """REPLACE INTO douyin_user
@@ -286,13 +286,13 @@ def handle_file(files):
                         continue
                     aweme_infos = list(form_aweme(line))
                     # 求差集，获取今天没有存储过的作品id
-                    new_aweme_infos = list(filter(lambda info: info['视频id'] not in today_aweme_result, aweme_infos))
+                    # new_aweme_infos = list(filter(lambda info: info['视频id'] not in today_aweme_result, aweme_infos))
                     new_aweme_args = [list(item.values()) for item in aweme_infos]  # todo 需要删除
                     # new_aweme_args = [list(item.values()) for item in new_aweme_infos]
                     logger.info(f'本次录入的新作品，id： {[item[0] for item in new_aweme_args]}')
                     aweme_insert_sql = """REPLACE INTO douyin_aweme
         (aweme_id, suren_id, digg_count, comment_count, share_count, download_count,
-         forward_count, promotion_id, product_id, tag, `desc`, create_time, update_time)
+         forward_count, promotion_id, product_id, tag, description, create_time, update_time)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     try:
                         cursor.executemany(aweme_insert_sql, new_aweme_args)

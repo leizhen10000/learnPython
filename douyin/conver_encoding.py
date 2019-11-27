@@ -26,8 +26,10 @@
 import os
 
 
-def convert_file(exclude_file='no'):
+def convert_file(exclude_file='no', include=None):
     file_list = os.listdir('D:\douyin')
+    if include is not None and isinstance(include, str):
+        file_list = list(filter(lambda x: include in x, file_list))
     for file in file_list:
         file_name = os.path.join('D:\douyin', file)
         if not os.path.isfile(file_name) or exclude_file in file_name:
@@ -36,7 +38,6 @@ def convert_file(exclude_file='no'):
             res = f.read().decode('utf-16-le').encode('utf-8').decode('utf-8-sig')
         with open(os.path.join('D:\douyin2', file), 'w', encoding='utf-8') as fw:
             fw.write(res)
-    return True
 
 
 def clean_dir(path):

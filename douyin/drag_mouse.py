@@ -191,6 +191,7 @@ def random_read_aweme():
     back()
 
 
+base_dir = 'D:\\douyin2'
 lock = threading.RLock()
 
 
@@ -233,33 +234,73 @@ def _read_from_new_file(new_filename):
     return last_line
 
 
+def _check_convert_file_exits(times=5, file_tags='all'):
+    """检验转换的文件中存在
+
+    :param file_tags: 文件标签，默认 all：所有文件
+    """
+    has_file = False
+    while times > 0:
+        time.sleep(.3)
+        files = os.listdir()
+        if file_tags != 'all':
+            files = list(filter(lambda x: file_tags in x, files))
+        if not files or len(files) == 0:
+            times -= 1
+        else:
+            has_file = True
+            return files
+    if not has_file:
+        log.error(f'没有获取到标签为 {file_tags} 的文件，请检查')
+        raise ValueError('没有获取到解析后的文件，请检查 base_dir 中内容')
+
+
+def get_promotion_count(has_shop_entry):
+    """获取商品总数"""
+    # 没有商品橱窗，直接返回商品数为0
+    if not has_shop_entry:
+        return 0
+    log.info('获取用户商品数量')
+    convert_file(include='promotion')
+    try:
+        files = _check_convert_file_exits(file_tags='promotion')
+    except ValueError:
+        log.error('解析 商品 文件失败，请检查 base_dir 中的内容')
+        return
+    if len(files) != 1:
+        raise Exception(f"当前有两个商品文件，请检查 {base_dir} 中的内容")
+    file_name = os.path.join(base_dir, files[0])
+    with open(file_name, encoding='utf-8') as f:
+        lines = f.readlines()
+        lines = [line.strip() for line in lines]
+        real_lines = list(filter(lambda x: x, lines))
+        last_line = str(real_lines[-1])
+        promotion_info = json.loads(last_line)
+        count = promotion_info.get('count')
+    return count
+
+
 def check_user_in_db():
     """验证用户信息相关功能
 
     如果用户存在在数据库，且有作品信息，则返回False
     如果用户信息需要更新入库，则返回True
     """
+    log.info('获取用户简单的数据：名称、作品数量')
     user_info = {'flag': True}
-    convert_file()
-    base_dir = 'd:\\douyin2'
-    time.sleep(.8)
-    files = os.listdir(base_dir)
-    nickname = None
-    with_fusion_shop_entry = None
-    aweme_count = None
-
-    if not files or len(files) == 0:
-        log.error('没有获取到文件，请检查')
-        raise Exception('没有获取到解析后的文件，请检查 base_dir 中内容')
+    convert_file(include='user')
+    try:
+        files = _check_convert_file_exits(file_tags='user')
+    except ValueError as e:
+        raise Exception(e)
 
     for file in files:
         file_name = os.path.join(base_dir, file)
         if os.path.isfile(file_name) and file.startswith('user') and '_' in file:
             line = get_last_line_in_file(file_name)
             nickname = re.findall(r'"nickname":"(.*?)"', line)
-            print('=' * 20)
             if nickname is None or len(nickname) < 1:
-                print(f'作者名称{nickname}')
+                log.info(f'作者名称{nickname}')
                 return user_info
             else:
                 user_info['name'] = nickname[0]
@@ -267,18 +308,8 @@ def check_user_in_db():
                     r'"with_fusion_shop_entry":(.*?),', line)[0]
                 user_info['aweme_count'] = re.findall(r'"aweme_count":(\d+)', line)[0]
                 break
-    for file in files:
-        file_name = os.path.join(base_dir, file)
-        if os.path.isfile(file_name) and 'promotion' in file_name:
-            with open(file_name, encoding='utf-8') as f:
-                lines = f.readlines()
-                lines = [line.strip() for line in lines]
-                real_lines = list(filter(lambda x: x, lines))
-                last_line = str(real_lines[-1])
-                promotion_info = json.loads(last_line)
-                count = promotion_info.get('count')
-                user_info['promotion_count'] = count
-                break
+    else:
+        return user_info
 
     # 查询数据库
     db_pool = get_db_tool()
@@ -297,7 +328,7 @@ HAVING COUNT(a.aweme_id) > 21
         result = cursor.fetchall()
         if not result or len(result) < 1:
             log.info(f'用户 {nickname} 不在数据库中')
-            flag = False
+            user_info['flag'] = False
         else:
             log.info(f'用户 {nickname} 有 {result[0][2]} 作品')
     except:
@@ -306,6 +337,7 @@ HAVING COUNT(a.aweme_id) > 21
     finally:
         cursor.close()
         conn.close()
+    log.info(user_info)
     return user_info
 
 
@@ -327,14 +359,12 @@ def get_last_line_in_file(file_name):
     return last_line
 
 
-def fly_up_to_get_all_aweme(return_times=1):
+def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     """向上滑动获取所有作品
 
+    :param aweme_num 作品总数，用户判断滑动次数
     :param return_times 判断返回上一页时，是返回 一次还是两次
     """
-    m.moveTo(console[0], console[1])
-    m.click(console[0], console[1])
-    aweme_num = int(input('>>> 请输入作品总数：'))
     if aweme_num > 20:
         hua(aweme_num, tail_to_head, step=7)
     if return_times == 1:
@@ -373,42 +403,66 @@ def get_suren_info(*args, **kwargs):
         log.error('返回次数必须给定')
         raise Exception('返回次数必须输入')
     source_base_dir = 'D:\\douyin'
-    base_dir = 'D:\\douyin2'
     time.sleep(.5)
+    log.info('获取素人信息')
     # 判断用户是否已经在数据库中，且包含作品信息
-    if check_user_in_db():
+    user_info = check_user_in_db()
+    flag = user_info.get('flag')
+    if flag:
         log.info('用户已经在数据库中存在，返回消息列表')
         _back_for_times(return_times)
         # 清理数据
         clean_dir(base_dir)
         clean_dir(source_base_dir)
         return
+
     # 判断是否有商品橱窗
-    focus_console()
-    has_aweme = int(input('>>> 获取 橱窗 1 or 作品 2 or 返回 0：'))
-    if has_aweme == 1:
+    # focus_console()
+    # has_aweme = int(input('>>> 获取 橱窗 1 or 作品 2 or 返回 0：'))
+    has_shop_entry = user_info.get('with_fusion_shop_entry')  # 是否有橱窗
+    if has_shop_entry is None:
+        log.info('获取橱窗失败')
+        focus_console()
+        has_shop_entry = int(input('>>> 获取 橱窗 1 or 作品 2 or 返回 0：'))
+    else:
+        has_shop_entry = True if has_shop_entry == 'true' else False
+
+    # 获取商品总数
+    promotion_count = get_promotion_count(has_shop_entry)
+    if promotion_count is None and has_shop_entry:
+        log.info('获取商品总数失败')
+        focus_console()
+        promotion_count = int(input('>>> 商品总数: '))
+    else:
+        promotion_count = int(promotion_count)
+
+    if has_shop_entry:
         # 点击橱窗
         m.moveTo(aweme_list_button[0], aweme_list_button[1])
-        click_or_not = int(input('>>> 是否自由点击橱窗: '))
-        if click_or_not:
-            log.info('点击完成？')
-            focus_console()
-        else:
-            to_x, to_y = m.position()
-            m.click(to_x, to_y)
+        click_or_not = int(input('>>> 橱窗 调整1 or 不调整 0 '))
+        to_x, to_y = m.position()
+        m.click(to_x, to_y)
         time.sleep(time_5)
-        focus_console()
-        promotion_amount = int(input('>>> 商品总数: '))
-        if promotion_amount > 10:
-            hua(promotion_amount, tail_to_head_faster, step=8)
+        if promotion_count >= 20:
+            hua(promotion_count, tail_to_head_faster, step=8)
         # 返回作品界面
         back()
         time.sleep(time_4)
-    if has_aweme:
-        # 作品向上滑动
-        fly_up_to_get_all_aweme(return_times)
 
-        convert_file(exclude_file='user')
+    # 获取作品信息
+    aweme_count = user_info.get('aweme_count')
+    if aweme_count is None:
+        log.info('没有获取作品数量')
+        m.click(console[0], console[1])
+        aweme_num = int(input('>>> 请输入作品总数：'))
+    else:
+        aweme_count = int(aweme_count)
+
+    if has_shop_entry or aweme_count:
+        # 作品向上滑动
+        fly_up_to_get_all_aweme(aweme_count, return_times)
+
+        convert_file(include='zuopin')
         # 存储数据入库
         log.info('存入数据库')
         handle_file(os.listdir(base_dir))
@@ -464,7 +518,7 @@ def fetch_first_user(flag_num, fetch_method):
         # fly_left()  # 向左滑动，进入主页
         click_avatar()  # 点击头像，进入主页
     else:
-        log.info('直接进入主页')
+        log.info('点击用户，直接进入主页')
         focus_console()
         m.moveTo(aweme_one[0], aweme_one[1] - 200)
         move_first = input('>>> 移动到第一个视频：')
@@ -537,15 +591,18 @@ def delete_user_in_message():
 
     m.moveTo(delete_x, delete_y, duration=.1)
     m.click(delete_x, delete_y)
+    log.info('删除消息列表中数据')
 
 
 def action_two(fetch_method):
     """只获取所有作品信息"""
     flag_num = 8
 
+    log.info('=' * 50)
     # 点击第三个视频
     fetch_third_user(flag_num, fetch_method)
     delete_user_in_message()
+    log.info('=' * 50)
     # 点击第二个视频
     # fetch_second_user(flag_num, fetch_method)
     # 点击第一个视频
@@ -553,20 +610,24 @@ def action_two(fetch_method):
 
 
 if __name__ == '__main__':
-    # roll_times = 0
+    roll_times = 0
     while True:
-        action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
-    #     focus_console()
-    #     is_continue = int(input('>>> 是否继续：'))
-    #     if is_continue:
-    #         # m.hotkey('alt', 'tab')
-    #         # roll_page()
-    #         # roll_times += 1
-    #         # log.info(f'翻页次数 {roll_times}')
-    #         # action() # 执行步骤一
-    #         action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
-    #     else:
-    #         break
+        roll_times += 1
+        if roll_times < 6:
+            action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+        else:
+            focus_console()
+            is_continue = int(input('>>> 是否继续：'))
+            if is_continue:
+                roll_times = 0
+                #         # m.hotkey('alt', 'tab')
+                #         # roll_page()
+                #         # roll_times += 1
+                #         # log.info(f'翻页次数 {roll_times}')
+                #         # action() # 执行步骤一
+                action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+            else:
+                break
 
     # m.hotkey('alt', 'tab')
     # # draw_cycle()
