@@ -140,10 +140,10 @@ def tail_to_head_faster():
     time.sleep(time_1 + randint(1, 10) / 15)
 
 
-def hua(exec_count, hua_method, step=9):
+def hua(exec_count, hua_method, step=9.0):
     """控制 hua 划的次数"""
     print(time.strftime('%H:%M:%S'))
-    count = math.ceil(exec_count / step) + 1
+    count = math.ceil(exec_count / float(step)) + 1
 
     while count > 0:
         print('计数', count)
@@ -202,13 +202,17 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     :param interval: 等待间隔
     :param file_tags: 文件标签，默认 all：所有文件
     """
+    step_interval = .1
     # 等待源文件出现
     has_source_file = False
     source_files = None
     cur = time.time()
     source_times = times
     while times > 0:
-        time.sleep(interval)
+        if times > 15:
+            time.sleep(step_interval)
+        else:
+            time.sleep(interval)
         source_files = os.listdir(source_base_dir)
         if file_tags != 'all':
             source_files = list(filter(lambda x: file_tags in x, source_files))
@@ -223,12 +227,19 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
         log.error(err)
         raise ValueError(err)
 
+    # 转换文件
+    log.info(f'转换标签为 {file_tags} 的文件')
+    convert_file(include=file_tags)
+
     has_convert_file = False
     convert_files = None
     cur = time.time()
     convert_times = times
     while times > 0:
-        time.sleep(interval)
+        if times > 15:
+            time.sleep(step_interval)
+        else:
+            time.sleep(interval)
         convert_files = os.listdir(base_dir)
         if file_tags != 'all':
             convert_files = list(filter(lambda x: file_tags in x, convert_files))
@@ -250,7 +261,6 @@ def get_promotion_count(has_shop_entry):
     if not has_shop_entry:
         return 0
     log.info('获取用户商品数量')
-    convert_file(include='promotion')
     try:
         files = _check_convert_file_exits(file_tags='promotion')
     except ValueError:
@@ -277,7 +287,6 @@ def check_user_in_db():
     """
     log.info('获取用户简单的数据：名称、作品数量')
     user_info = {'flag': True}
-    convert_file(include='user')
     try:
         files = _check_convert_file_exits(file_tags='user')
     except ValueError as e:
@@ -353,7 +362,7 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
         focus_console()
         aweme_num = int(input(f'当前作品数量超过200，请确认数值'))
     if aweme_num > 20:
-        hua(aweme_num, tail_to_head, step=6)
+        hua(aweme_num, tail_to_head, step=6.7)
     else:
         log.info('作品数量小于20')
     if return_times == 1:
@@ -455,7 +464,7 @@ def get_suren_info(*args, **kwargs):
         fly_up_to_get_all_aweme(aweme_count, return_times)
         log.info(f'作品数量为 {aweme_count}, 开始滑动')
 
-        convert_file(include='zuopin')
+        _check_convert_file_exits(file_tags='zuopin')
         # 存储数据入库
         log.info('存入数据库')
         handle_file(os.listdir(base_dir))
@@ -525,6 +534,7 @@ def fetch_second_user(flag_num, fetch_method):
 
 def fetch_third_user(flag_num, fetch_method):
     """点击第三个用户，获取信息"""
+    time.sleep(.1)
     chose_third = randint(1, 10)
     click_title_or_aweme_third = chose_third > flag_num
     return_times_third = 2 if click_title_or_aweme_third else 1
