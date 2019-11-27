@@ -192,31 +192,56 @@ def random_read_aweme():
 
 
 base_dir = 'D:\\douyin2'
+source_base_dir = 'D:\\douyin'
 
 
-def _check_convert_file_exits(times=20, file_tags='all'):
-    """检验转换的文件中存在
+def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
+    """检验转换的文件/源文件是否存在
 
+    :param times: 等待循环次数
+    :param interval: 等待间隔
     :param file_tags: 文件标签，默认 all：所有文件
     """
-    has_file = False
-    files = None
+    # 等待源文件出现
+    has_source_file = False
+    source_files = None
     cur = time.time()
+    source_times = times
     while times > 0:
-        time.sleep(.3)
-        files = os.listdir(base_dir)
+        time.sleep(interval)
+        source_files = os.listdir(source_base_dir)
         if file_tags != 'all':
-            files = list(filter(lambda x: file_tags in x, files))
-        if not files or len(files) == 0:
-            times -= 1
+            source_files = list(filter(lambda x: file_tags in x, source_files))
+            if not source_files or len(source_files) < 1:
+                source_times -= 1
+            else:
+                has_source_file = True
+                break
+    log.info(f'获取标签为 {file_tags} 的 【源文件】 时长：{time.time() - cur}')
+    if not has_source_file or source_files is None:
+        err = f'没有获取到标签为 {file_tags} 的 【源文件】，请检查'
+        log.error(err)
+        raise ValueError(err)
+
+    has_convert_file = False
+    convert_files = None
+    cur = time.time()
+    convert_times = times
+    while times > 0:
+        time.sleep(interval)
+        convert_files = os.listdir(base_dir)
+        if file_tags != 'all':
+            convert_files = list(filter(lambda x: file_tags in x, convert_files))
+        if not convert_files or len(convert_files) == 0:
+            convert_times -= 1
         else:
-            has_file = True
+            has_convert_file = True
             break
-    log.info(f'获取标签为 {file_tags} 的文件时长：{time.time() - cur}')
-    if not has_file or files is None:
-        log.error(f'没有获取到标签为 {file_tags} 的文件，请检查')
-        raise ValueError('没有获取到解析后的文件，请检查 base_dir 中内容')
-    return files
+    log.info(f'获取标签为 {file_tags} 的【转换文件】时长：{time.time() - cur}')
+    if not has_convert_file or convert_files is None:
+        log.error(f'没有获取到标签为 {file_tags} 的【解析后文件】，请检查')
+        raise ValueError('没有获取到【解析后的文件】，请检查 base_dir 中内容')
+    return convert_files
 
 
 def get_promotion_count(has_shop_entry):
@@ -262,14 +287,14 @@ def check_user_in_db():
         file_name = os.path.join(base_dir, file)
         if os.path.isfile(file_name) and file.startswith('user') and '_' in file:
             line_json = get_last_line_in_file(file_name)
-            nickname = line_json.get('nickname', '')
-            if not nickname or len(nickname) < 1:
-                log.info(f'作者名称{nickname}')
+            user = line_json.get('user')
+            if not user or len(user) < 1:
                 return user_info
             else:
-                user_info['name'] = nickname
-                user_info['with_fusion_shop_entry'] = line_json.get('with_fusion_shop_entry')
-                user_info['aweme_count'] = line_json.get('aweme_count')
+                nickname = user.get('nickname', '')
+                user_info['name'] = user.get('nickname', '')
+                user_info['with_fusion_shop_entry'] = user.get('with_fusion_shop_entry')
+                user_info['aweme_count'] = user.get('aweme_count')
                 aweme_count = user_info['aweme_count']
                 break
     else:
@@ -314,6 +339,7 @@ def get_last_line_in_file(file_name):
         real_lines = list(filter(lambda x: x, lines))
         last_line = str(real_lines[-1])
         line_json = json.loads(last_line)
+        log.info(f'文件的最后一行为：{line_json}')
         return line_json
 
 
@@ -365,7 +391,6 @@ def get_suren_info(*args, **kwargs):
     if return_times is None:
         log.error('返回次数必须给定')
         raise Exception('返回次数必须输入')
-    source_base_dir = 'D:\\douyin'
     time.sleep(.5)
     log.info('获取素人信息')
     # 判断用户是否已经在数据库中，且包含作品信息
@@ -447,32 +472,6 @@ def get_suren_info(*args, **kwargs):
 def roll_page():
     m.moveTo(head[0], head[1], duration=time_1)
     m.dragTo(tail[0], tail[1] + 50, duration=time_1)
-
-
-def action():
-    """流程"""
-    # 点击第一个视频
-    chose_first = randint(1, 10)
-    if chose_first > 11:  # 如果点击被封了，就走下面的逻辑
-        m.click(aweme_one[0], aweme_one[1], duration=time_1)
-    else:
-        m.moveTo(aweme_one[0], aweme_one[1] - 200)
-        move_first = input('>>> 是否需要移动到第一个视频：')
-        if move_first:
-            first_x, first_y = m.position()
-            m.click(first_x, first_y)
-        else:
-            m.click(aweme_one[0], aweme_one[1] - 200)
-
-    time.sleep(time_20 + time_3)
-    fly_left()  # 向左滑动，进入主页 tip：可能不需要这步骤
-    get_suren_info()
-    # 点击第二个视频
-    m.click(aweme_two[0], aweme_two[1], duration=0.2 + random() / 3.0)
-    get_suren_info()
-    m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 2.0)
-    get_suren_info()
-    # time.sleep(time_10)
 
 
 def fetch_first_user(flag_num, fetch_method):
@@ -563,15 +562,17 @@ def delete_user_in_message():
     log.info('删除消息列表中数据')
 
 
-def action_two(fetch_method):
+def action(fetch_method):
     """只获取所有作品信息"""
     flag_num = 8
 
+    start = time.time()
     log.info('=' * 50)
     # 点击第三个视频
     fetch_third_user(flag_num, fetch_method)
     delete_user_in_message()
     log.info('=' * 50)
+    log.info(f'执行时长：{time.time() - start:.2f}')
     # 点击第二个视频
     # fetch_second_user(flag_num, fetch_method)
     # 点击第一个视频
@@ -583,7 +584,7 @@ if __name__ == '__main__':
     while True:
         roll_times += 1
         if roll_times < 1:
-            action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+            action(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
         else:
             focus_console()
             is_continue = int(input('>>> 是否继续：'))
@@ -594,7 +595,7 @@ if __name__ == '__main__':
                 #         # roll_times += 1
                 #         # log.info(f'翻页次数 {roll_times}')
                 #         # action() # 执行步骤一
-                action_two(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+                action(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
             else:
                 break
 
