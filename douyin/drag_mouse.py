@@ -101,7 +101,7 @@ def back():
 
 def sleep(seconds):
     time.sleep(seconds)
-    print(f'时长: {seconds:.2f}s')
+    # print(f'时长: {seconds:.2f}s')
 
 
 def count_time(func):
@@ -163,7 +163,8 @@ def hua(exec_count, hua_method, step=9.0):
     count = math.ceil(exec_count / float(step)) + 1
 
     while count > 0:
-        print('计数', count)
+        if count % 5 == 1 or count < 10:
+            print('计数', count)
         count -= 1
         hua_method()
 
@@ -395,11 +396,11 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     if aweme_num > 200:
         focus_console()
         aweme_num = int(input(f'当前作品数量超过200，请确认数值'))
-    base_step = 8  # 如果作品数量少，可以步长大一点
+    base_step = 6  # 如果作品数量少，可以步长大一点
     if 150 > aweme_num > 20:
         hua(aweme_num, tail_to_head, step=base_step)
     elif aweme_num > 150:
-        hua(aweme_num, tail_to_head, step=base_step - 1)
+        hua(aweme_num, tail_to_head, step=base_step - 0)
     else:
         log.info('作品数量小于20')
     if return_times == 1:
@@ -482,7 +483,7 @@ def get_suren_info(*args, **kwargs):
             promotion_count = int(promotion_count)
         log.info(f'商品数量为：{promotion_count}')
 
-        if promotion_count >= 20:
+        if promotion_count > 20:
             hua(promotion_count, tail_to_head_faster, step=8)
         # 返回作品界面
         back()
@@ -502,9 +503,10 @@ def get_suren_info(*args, **kwargs):
     if has_shop_entry or aweme_count:
         # 作品向上滑动
         fly_up_to_get_all_aweme(aweme_count, return_times)
-        log.info(f'作品数量为 {aweme_count}')
+        log.info(f'作品数量为 【{aweme_count}】')
 
         _check_convert_file_exits(file_tags='zuopin')
+        _check_convert_file_exits(file_tags='promotion')
         # 存储数据入库
         log.info('存入数据库')
         handle_file(os.listdir(base_dir))
@@ -592,6 +594,7 @@ if __name__ == '__main__':
     while True:
         roll_times += 1
         if roll_times < 1:
+            # get_suren_info(1)
             action(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
         else:
             focus_console()
