@@ -163,7 +163,7 @@ def hua(exec_count, hua_method, step=9.0):
     count = math.ceil(exec_count / float(step)) + 1
 
     while count > 0:
-        if count % 5 == 1 or count < 10:
+        if count % 10 == 0 or count < 3:
             print('计数', count)
         count -= 1
         hua_method()
@@ -213,7 +213,6 @@ base_dir = 'D:\\douyin2'
 source_base_dir = 'D:\\douyin'
 
 
-@count_time
 def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     """检验转换的文件/源文件是否存在
 
@@ -241,14 +240,14 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
             else:
                 has_source_file = True
                 break
-    log.info(f'获取标签为 {file_tags} 的 【源文件】 {source_files} 时长：{time.time() - cur:.2f}s')
+    # log.debug(f'获取标签为 {file_tags} 的 【源文件】 {source_files} 时长：{time.time() - cur:.2f}s')
     if not has_source_file or source_files is None:
         err = f'没有获取到标签为 {file_tags} 的 【源文件】，请检查'
         log.error(err)
         raise ValueError(err)
 
     # 转换文件
-    log.info(f'转换标签为 {file_tags} 的文件')
+    log.debug(f'转换标签为 {file_tags} 的文件')
     convert_file(include=file_tags)
 
     has_convert_file = False
@@ -269,7 +268,7 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
         else:
             has_convert_file = True
             break
-    log.info(f'获取标签为 {file_tags} 的【转换文件】{convert_files} 时长：{time.time() - cur:.2f}s')
+    # log.debug(f'获取标签为 {file_tags} 的【转换文件】{convert_files} 时长：{time.time() - cur:.2f}s')
     if not has_convert_file or convert_files is None:
         log.error(f'没有获取到标签为 {file_tags} 的【解析后文件】，请检查')
         raise ValueError('没有获取到【解析后的文件】，请检查 base_dir 中内容')
@@ -306,8 +305,8 @@ def get_promotion_count(has_shop_entry):
 def check_user_in_db():
     """验证用户信息相关功能
 
-    如果用户存在在数据库，且有作品信息，则返回False
-    如果用户信息需要更新入库，则返回True
+    如果用户存在在数据库，且有作品信息，则返回 True
+    如果用户信息需要更新入库，则返回 False
     """
     log.info('获取用户简单的数据：名称、作品数量')
     user_info = {'flag': True}
@@ -371,7 +370,8 @@ WHERE a.suren_id = %s
             cursor.execute(user_sql, (int(uid)))
             result = cursor.fetchone()
             count = result[0]
-            log.info(f'\n用户 {uid} - {nickname} 有 {count} 作品\n')
+            if count:
+                log.info(f'\n用户 {uid} - {nickname} 有 {count} 作品\n')
             user_info['flag'] = True if count else False
     except:
         traceback.print_exc()
@@ -397,7 +397,6 @@ def get_last_line_in_file(file_name, exclude=None):
         real_lines = list(filter(lambda x: x, lines))
         if exclude is not None and isinstance(exclude, list):
             for item in exclude:
-                log.info(f'排除包含 {exclude} 的行')
                 real_lines = list(filter(lambda x: item not in x, real_lines))
         last_line = str(real_lines[-1])
         line_json = json.loads(last_line)
