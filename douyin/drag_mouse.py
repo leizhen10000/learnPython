@@ -328,6 +328,7 @@ def check_user_in_db():
                 user_info['name'] = user.get('nickname', '')
                 user_info['with_fusion_shop_entry'] = user.get('with_fusion_shop_entry')
                 user_info['aweme_count'] = user.get('aweme_count')
+                uid = user.get('uid')
                 aweme_count = user_info['aweme_count']
                 break
     else:
@@ -337,23 +338,40 @@ def check_user_in_db():
     db_pool = get_db_tool()
     conn = db_pool.connection()
     cursor = conn.cursor()
-    sql = """SELECT u.nickname, u.suren_id, COUNT(a.aweme_id) AS a_num 
-FROM douyin_aweme AS a
-       INNER JOIN douyin_user AS u
-                  ON u.suren_id = a.suren_id
-                    AND u.nickname = %s 
-GROUP BY a.suren_id
-HAVING COUNT(a.aweme_id) > 21
-OR COUNT(a.aweme_id) = %s
-"""
+
+    user_sql = """
+    SELECT COUNT(a.aweme_id)
+FROM douyin_aweme a
+WHERE a.suren_id = %s
+    """
+
+    if uid is None:
+        log.info('获取用户 uid 为空，推荐使用 nickname 查询')
+        user_sql = """SELECT u.nickname, u.suren_id, COUNT(a.aweme_id) AS a_num 
+    FROM douyin_aweme AS a
+           INNER JOIN douyin_user AS u
+                      ON u.suren_id = a.suren_id
+                        AND u.nickname = %s 
+    GROUP BY a.suren_id
+    HAVING COUNT(a.aweme_id) > 21
+    OR COUNT(a.aweme_id) = %s
+    """
     try:
-        cursor.execute(sql, (nickname, int(aweme_count)))
-        result = cursor.fetchall()
-        if not result or len(result) < 1:
-            log.info(f'用户 {nickname} 不在数据库中')
-            user_info['flag'] = False
+        # 做两种查询方式的判断
+        if uid is None:
+            cursor.execute(user_sql, (nickname, int(aweme_count)))
+            result = cursor.fetchall()
+            if result is None or len(result) < 1:
+                log.info(f'用户 {nickname} 不在数据库中')
+                user_info['flag'] = False
+            else:
+                log.info(f'\n用户 {nickname} 有 {result[0][2]} 作品\n')
         else:
-            log.info(f'\n用户 {nickname} 有 {result[0][2]} 作品\n')
+            cursor.execute(user_sql, (int(uid)))
+            result = cursor.fetchone()
+            count = result[0]
+            log.info(f'\n用户 {uid} - {nickname} 有 {count} 作品\n')
+            user_info['flag'] = False if count else True
     except:
         traceback.print_exc()
         conn.rollback()
