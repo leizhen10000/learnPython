@@ -31,9 +31,9 @@ import pyautogui
 from douyin.drag_mouse import check_user_in_db, hua, head_to_tail, back, focus_console
 
 if __name__ == '__main__':
-    # hua(10, head_to_tail, step=2)
+    hua(10, head_to_tail, step=2)
 
-    # focus_console()
+    focus_console()
     # for i in range(2):
     #     x, y = 1061, 1607
     #     convertX, convertY = 65536 * x // 3840 + 1, 65536 * y // 2160 + 1
@@ -54,4 +54,4 @@ if __name__ == '__main__':
     #
     # time.sleep(.5)
     #
-    print(check_user_in_db())
+    # print(check_user_in_db())

@@ -118,7 +118,7 @@ def format_user_info(json_data):
     short_id = user.get('short_id', '')  # 抖音号2
     if not unique_id:
         unique_id = short_id
-    with_fusion_shop_entry = user.get('with_fusion_shop_entry')  # 是否有商品橱窗
+    # with_fusion_shop_entry = user.get('with_fusion_shop_entry')  # 是否有商品橱窗
     user_url = user['share_info']['share_url']  # 用户详情链接
     user_qr_code_url = user['share_info']['share_qrcode_url']['url_list']
     if len(user_qr_code_url) > 0:
@@ -127,8 +127,8 @@ def format_user_info(json_data):
     user_dict = {'素人id': uid, '': unique_id, '获赞量': total_favorited, '关注量': following_count, '作品数': aweme_count,
                  '动态数': dongtai_count, '粉丝量': follower_count, '喜欢量': favoriting_count, '绑定手机': bind_phone,
                  '签名': signature, '昵称': nickname, '年龄': age, '性别': gender, '城市': city, '大学': school_name,
-                 '是否有商品橱窗': with_fusion_shop_entry, '用户详情链接': user_url,
-                 '用户详情二维码链接': user_qr_code_url}
+                 # '是否有商品橱窗': with_fusion_shop_entry,
+                 '用户详情链接': user_url, '用户详情二维码链接': user_qr_code_url}
     logger.info('用户信息-提取内容')
     logger.info(user_dict)
     yield user_dict
@@ -266,8 +266,8 @@ def handle_file(files):
                     # 如果没有当天的数据则存入/更新数据库
                     suren_insert = """REPLACE INTO douyin_user
                 (suren_id, douyin_id,total_favourited, following_count, aweme_count, dongtai_count, follower_count,
-                 favouriting_count, bind_phone, signature, nickname, age, gender, city, college, with_fusion_shop_entry, url, qrcode_url, update_time)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                 favouriting_count, bind_phone, signature, nickname, age, gender, city, college, url, qrcode_url, update_time)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     try:
                         cursor.executemany(query=suren_insert, args=insert_args)
                         conn.commit()
