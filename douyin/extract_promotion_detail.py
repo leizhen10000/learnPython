@@ -49,6 +49,7 @@ def create_excel(file_path):
 
 def format_promotion(json_data):
     result = json.loads(json_data)
+    promotion_count = result.get('count')  # 商品总数
     promotions = result.get('promotions')
     logger.debug('商品信息')
     logger.debug(promotions)
@@ -77,7 +78,7 @@ def format_promotion(json_data):
         promotion_dict = {'商品id': promotion_id, '名称': title, '销量': sales, '访客': visitor_count, '价格': price,
                           '商品来源': goods_source, '优惠后价格': coupon_real_price, '弹性标题': elastic_title,
                           '弹性类型': elastic_type, '关联视频id': last_aweme_id, '优惠券链接': coupon_url,
-                          '商品详情链接': detail_url}
+                          '商品详情链接': detail_url, '商品总数': promotion_count}
         logger.info('商品信息-提取内容')
         logger.info(promotion_dict)
         yield promotion_dict
@@ -226,9 +227,8 @@ def handle_file(files):
                     promotion_insert_sql = """REPLACE INTO douyin_promotion
         (promotion_id, suren_id, title, sales, visitor_count, price, goods_source, 
         coupon_real_price, elastic_title, elastic_type,
-         aweme_id, coupon_link, detail_url, update_time)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
-                    # todo: 需要看一下None值插入是什么效果
+         aweme_id, coupon_link, detail_url, count, update_time)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     try:
                         cursor.executemany(promotion_insert_sql, promotion_insert_args)
                         conn.commit()
@@ -310,10 +310,10 @@ def handle_file(files):
     conn.close()
 
 # # 转换 utf-16 为 utf-8
-success = convert_file()
-handle_file(os.listdir(base_dir))
-clean_dir(base_dir)
-clean_dir(source_base_dir)
+# success = convert_file()
+# handle_file(os.listdir(base_dir))
+# clean_dir(base_dir)
+# clean_dir(source_base_dir)
 
 # # todo: 不知道能不能做去重，先清空数据再说
 # def clean():

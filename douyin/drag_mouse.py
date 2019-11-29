@@ -290,7 +290,6 @@ def get_promotion_count(has_shop_entry):
     if len(files) != 1:
         raise Exception(f"当前有两个商品文件，请检查 {base_dir} 中的内容")
     file_name = os.path.join(base_dir, files[0])
-    uid = re.findall('\d+', file_name)[0]
     with open(file_name, encoding='utf-8') as f:
         lines = f.readlines()
         lines = [line.strip() for line in lines]
@@ -299,28 +298,6 @@ def get_promotion_count(has_shop_entry):
         promotion_info = json.loads(last_line)
         count = promotion_info.get('count')
 
-    if count > 20:  # todo: 后期这个验证可以去掉
-        # 如果商品数量大于20，查询数据库
-        db_pool = get_db_tool()
-        conn = db_pool.connection()
-        cursor = conn.cursor()
-
-        promotion_sql = """SELECT COUNT(p.promotion_id)
-    FROM douyin_promotion p
-    WHERE p.suren_id = %s
-        """
-
-        try:
-            cursor.execute(promotion_info, (int(uid)))
-            result = cursor.fetchone()
-            if result[0] <= 20:
-                log.error('\n用户商品数量存储有错，请检查')
-        except:
-            traceback.print_exc()
-            conn.rollback()
-        finally:
-            cursor.close()
-            conn.close()
     log.info(f'商品数量为：【{count}】')
     return count
 
@@ -334,7 +311,7 @@ def check_user_in_db():
     """
     log.info('获取用户简单的数据：名称、作品数量')
     user_info = {'flag': True}
-    exclude_users = ['pangpang']
+    exclude_users = ['pangpang', 'Alliew']
     try:
         files = _check_convert_file_exits(file_tags='user')
     except ValueError as e:
@@ -386,7 +363,7 @@ WHERE a.suren_id = %s
             cursor.execute(user_sql, (nickname, int(aweme_count)))
             result = cursor.fetchall()
             if result is None or len(result) < 1:
-                log.info(f'用户 {nickname} 不在数据库中')
+                log.info(f'用户 {nickname} 在数据库中不存在 or 作品信息不全')
                 user_info['flag'] = False
             else:
                 log.info(f'\n用户 {nickname} 有 {result[0][2]} 作品\n')
@@ -395,7 +372,7 @@ WHERE a.suren_id = %s
             result = cursor.fetchone()
             count = result[0]
             log.info(f'\n用户 {uid} - {nickname} 有 {count} 作品\n')
-            user_info['flag'] = False if count else True
+            user_info['flag'] = True if count else False
     except:
         traceback.print_exc()
         conn.rollback()
