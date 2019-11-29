@@ -226,8 +226,8 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     source_files = None
     cur = time.time()
     source_times = times
-    while times > 0:
-        if times > 15:
+    while source_times > 0:
+        if source_times > 15:
             sleep(step_interval)
             source_times -= 1
         else:
@@ -254,9 +254,10 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     convert_files = None
     cur = time.time()
     convert_times = times
-    while times > 0:
-        if times > 15:
+    while convert_times > 0:
+        if convert_times > 15:
             sleep(step_interval)
+            convert_times -= 1
         else:
             sleep(interval)
         convert_files = os.listdir(base_dir)
@@ -308,6 +309,7 @@ def check_user_in_db():
     """
     log.info('获取用户简单的数据：名称、作品数量')
     user_info = {'flag': True}
+    exclude_users = ['pangpang']
     try:
         files = _check_convert_file_exits(file_tags='user')
     except ValueError as e:
@@ -316,7 +318,7 @@ def check_user_in_db():
     for file in files:
         file_name = os.path.join(base_dir, file)
         if os.path.isfile(file_name) and file.startswith('user'):
-            line_json = get_last_line_in_file(file_name)
+            line_json = get_last_line_in_file(file_name, exclude=exclude_users)
             user = line_json.get('user')
             if not user or len(user) < 1:
                 return user_info
@@ -361,12 +363,22 @@ OR COUNT(a.aweme_id) = %s
     return user_info
 
 
-def get_last_line_in_file(file_name):
-    """获取文件最后一行"""
+def get_last_line_in_file(file_name, exclude=None):
+    """获取文件最后一行
+
+    :param file_name: 文件名称
+    :param exclude: 排除的内容，如果某一行包括该内容，则排除
+
+    exclude 的主要应用场景是测试用的用户，自身信息带入 user 文件，从而覆盖了最新的内容
+    """
     with open(file_name, encoding='utf-8') as f:
         lines = f.readlines()
         lines = [line.strip() for line in lines]
         real_lines = list(filter(lambda x: x, lines))
+        if exclude is not None and isinstance(exclude, list):
+            for item in exclude:
+                log.info(f'排除包含 {exclude} 的行')
+                real_lines = list(filter(lambda x: item not in x, real_lines))
         last_line = str(real_lines[-1])
         line_json = json.loads(last_line)
         log.info(f'文件的最后一行为：{line_json}')
