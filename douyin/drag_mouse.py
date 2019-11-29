@@ -282,7 +282,6 @@ def get_promotion_count(has_shop_entry):
     # 没有商品橱窗，直接返回商品数为0
     if not has_shop_entry:
         return 0
-    log.info('获取用户商品数量')
     try:
         files = _check_convert_file_exits(file_tags='promotion')
     except ValueError:
@@ -291,6 +290,7 @@ def get_promotion_count(has_shop_entry):
     if len(files) != 1:
         raise Exception(f"当前有两个商品文件，请检查 {base_dir} 中的内容")
     file_name = os.path.join(base_dir, files[0])
+    uid = re.findall('\d+', file_name)[0]
     with open(file_name, encoding='utf-8') as f:
         lines = f.readlines()
         lines = [line.strip() for line in lines]
@@ -298,6 +298,30 @@ def get_promotion_count(has_shop_entry):
         last_line = str(real_lines[-1])
         promotion_info = json.loads(last_line)
         count = promotion_info.get('count')
+
+    if count > 20:  # todo: 后期这个验证可以去掉
+        # 如果商品数量大于20，查询数据库
+        db_pool = get_db_tool()
+        conn = db_pool.connection()
+        cursor = conn.cursor()
+
+        promotion_sql = """SELECT COUNT(p.promotion_id)
+    FROM douyin_promotion p
+    WHERE p.suren_id = %s
+        """
+
+        try:
+            cursor.execute(promotion_info, (int(uid)))
+            result = cursor.fetchone()
+            if result[0] <= 20:
+                log.error('\n用户商品数量存储有错，请检查')
+        except:
+            traceback.print_exc()
+            conn.rollback()
+        finally:
+            cursor.close()
+            conn.close()
+    log.info(f'商品数量为：【{count}】')
     return count
 
 
@@ -499,7 +523,6 @@ def get_suren_info(*args, **kwargs):
             promotion_count = int(input('>>> 商品总数: '))
         else:
             promotion_count = int(promotion_count)
-        log.info(f'商品数量为：{promotion_count}')
 
         if promotion_count > 20:
             hua(promotion_count, tail_to_head_faster, step=8)
