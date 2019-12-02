@@ -73,7 +73,7 @@ aweme_one = x + 200 + randint(1, 5), y + 400
 aweme_two = x + 130 + randint(5, 10), y + 850
 # 分享用户标签时的位置，整个标签都可以点击
 # aweme_three = x + 135 + randint(-60, 190), y + 1400
-aweme_three = x + 322 + randint(-250, 190), y + 1527 + randint(-40, 50)
+aweme_three = x + 322 + randint(-250, 130), y + 1527 + randint(-40, 50)
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
 avatar = x + 976 + randint(-3, 3), y + 987 + randint(-3, 3)
@@ -104,7 +104,7 @@ def back():
 
 def sleep(seconds):
     time.sleep(seconds)
-    # print(f'时长: {seconds:.2f}s')
+    print(f'时长: {seconds:.2f}s')
 
 
 def count_time(func):
@@ -148,7 +148,7 @@ def tail_to_head():
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(2, 4) / 46.0)
-    sleep(time_2 + time_10 + randint(1, 5) / 16)
+    sleep(time_1 + time_10 + randint(1, 5) / 16)
 
 
 def tail_to_head_faster():
@@ -157,7 +157,7 @@ def tail_to_head_faster():
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(1, 3) / 45.0)
-    sleep(time_1 + randint(1, 10) / 15)
+    sleep(time_1 + randint(1, 5) / 15)
 
 
 def hua(exec_count, hua_method, step=9.0):
@@ -419,7 +419,7 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     if aweme_num > 200:
         focus_console()
         aweme_num = int(input(f'当前作品数量超过200，请确认数值'))
-    base_step = 7  # 如果作品数量少，可以步长大一点
+    base_step = 9  # 如果作品数量少，可以步长大一点
     if 150 > aweme_num > 20:
         hua(aweme_num, tail_to_head, step=base_step)
     elif aweme_num > 150:
@@ -433,7 +433,8 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     elif return_times == 2:
         # 返回两次
         back()
-        sleep(time_13)
+        print('返回一次')
+        sleep(time_10)
         # 设置随机访问视频
         tea = randint(1, 10)
         if tea > 8:
@@ -442,6 +443,7 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
 
         # 返回消息列表
         back()
+        print('返回第二次')
         sleep(time_10)
 
 
@@ -557,7 +559,7 @@ def fetch_user(flag_num, fetch_method):
     if click_title_or_aweme_third:
         log.info('点击头像进入视频后，再进入主页')
         m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 20.0)
-        sleep(time_15 + time_3)
+        sleep(time_18)
         # fly_left()  # 向左滑动，进入主页
         click_avatar()  # 点击头像，进入主页
     else:
@@ -591,7 +593,7 @@ def delete_user_in_message():
 
 def action(fetch_method):
     """只获取所有作品信息"""
-    flag_num = 8
+    flag_num = 11
 
     start = time.time()
     log.info('\n' + '=' * 50)
