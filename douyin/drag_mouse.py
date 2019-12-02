@@ -71,11 +71,14 @@ head = x + 762, y + 81
 tail = x + 762, y + 1630
 aweme_one = x + 200 + randint(1, 5), y + 400
 aweme_two = x + 130 + randint(5, 10), y + 850
-aweme_three = x + 135 + randint(-60, 190), y + 1400
+# 分享用户标签时的位置，整个标签都可以点击
+# aweme_three = x + 135 + randint(-60, 190), y + 1400
+aweme_three = x + 322 + randint(-250, 190), y + 1527 + randint(-40, 50)
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
 avatar = x + 976 + randint(-3, 3), y + 987 + randint(-3, 3)
-delete_x, delete_y = x + 483 + randint(-80, 70), y + 1129 + randint(-5, 20)
+# delete_x, delete_y = x + 483 + randint(-80, 70), y + 1129 + randint(-5, 20)
+delete_x, delete_y = x + 483 + randint(-80, 70), y + 1176 + randint(-5, 20)
 
 console = 2589, 2055
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
@@ -109,7 +112,7 @@ def count_time(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
-        log.debug(f'--- {func.__name__} 执行时长：{time.time() - start_time:.2f}s ---')
+        log.debug(f'>>>> {func.__name__} 执行时长：{time.time() - start_time:.2f}s <<<<')
         return result
 
     return wrapper
@@ -159,12 +162,14 @@ def tail_to_head_faster():
 
 def hua(exec_count, hua_method, step=9.0):
     """控制 hua 划的次数"""
-    print(time.strftime('%H:%M:%S'))
     count = math.ceil(exec_count / float(step)) + 1
+    start = time.strftime('%H:%M:%S')
+    print(F'开始时间：{start}，初始计数 {count}')
+    start = time.time()
 
     while count > 0:
-        if count % 10 == 0 or count < 3:
-            print('计数', count)
+        if count % 10 == 0 or count == 1:
+            print('计数', count, '耗时', f'{time.time() - start:.2f}')
         count -= 1
         hua_method()
 
@@ -400,7 +405,7 @@ def get_last_line_in_file(file_name, exclude=None):
                 real_lines = list(filter(lambda x: item not in x, real_lines))
         last_line = str(real_lines[-1])
         line_json = json.loads(last_line)
-        log.info(f'文件的最后一行为：{line_json}')
+        # log.info(f'文件的最后一行为：{line_json}')
         return line_json
 
 
@@ -414,11 +419,11 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     if aweme_num > 200:
         focus_console()
         aweme_num = int(input(f'当前作品数量超过200，请确认数值'))
-    base_step = 6  # 如果作品数量少，可以步长大一点
+    base_step = 7  # 如果作品数量少，可以步长大一点
     if 150 > aweme_num > 20:
         hua(aweme_num, tail_to_head, step=base_step)
     elif aweme_num > 150:
-        hua(aweme_num, tail_to_head, step=base_step - 0)
+        hua(aweme_num, tail_to_head, step=base_step - 1)
     else:
         log.info('作品数量小于20')
     if return_times == 1:
@@ -501,7 +506,7 @@ def get_suren_info(*args, **kwargs):
             promotion_count = int(promotion_count)
 
         if promotion_count > 20:
-            hua(promotion_count, tail_to_head_faster, step=8)
+            hua(promotion_count, tail_to_head_faster, step=12)
         # 返回作品界面
         back()
         sleep(time_4)
@@ -519,8 +524,8 @@ def get_suren_info(*args, **kwargs):
 
     if has_shop_entry or aweme_count:
         # 作品向上滑动
-        fly_up_to_get_all_aweme(aweme_count, return_times)
         log.info(f'作品数量为 【{aweme_count}】')
+        fly_up_to_get_all_aweme(aweme_count, return_times)
 
         _check_convert_file_exits(file_tags='zuopin')
         _check_convert_file_exits(file_tags='promotion')

@@ -28,10 +28,12 @@ import time
 
 import pyautogui
 
-from douyin.drag_mouse import check_user_in_db, hua, head_to_tail, back, focus_console
+from douyin.drag_mouse import check_user_in_db, hua, head_to_tail, back, focus_console, tail_to_head
 
 if __name__ == '__main__':
-    hua(10, head_to_tail, step=2)
+    hua(212, tail_to_head, step=9)
+
+
 
     focus_console()
     # for i in range(2):
