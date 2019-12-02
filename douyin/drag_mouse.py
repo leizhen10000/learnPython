@@ -72,13 +72,13 @@ tail = x + 762, y + 1630
 aweme_one = x + 200 + randint(1, 5), y + 400
 aweme_two = x + 130 + randint(5, 10), y + 850
 # 分享用户标签时的位置，整个标签都可以点击
-# aweme_three = x + 135 + randint(-60, 190), y + 1400
-aweme_three = x + 322 + randint(-250, 130), y + 1527 + randint(-40, 50)
+aweme_three = x + 135 + randint(-60, 190), y + 1400
+# aweme_three = x + 322 + randint(-250, 130), y + 1527 + randint(-40, 50)
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
 avatar = x + 976 + randint(-3, 3), y + 987 + randint(-3, 3)
-# delete_x, delete_y = x + 483 + randint(-80, 70), y + 1129 + randint(-5, 20)
-delete_x, delete_y = x + 483 + randint(-80, 70), y + 1176 + randint(-5, 20)
+delete_x, delete_y = x + 483 + randint(-80, 70), y + 1129 + randint(-5, 20)
+# delete_x, delete_y = x + 483 + randint(-80, 70), y + 1176 + randint(-5, 20)
 
 console = 2589, 2055
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
@@ -104,7 +104,7 @@ def back():
 
 def sleep(seconds):
     time.sleep(seconds)
-    print(f'时长: {seconds:.2f}s')
+    # print(f'时长: {seconds:.2f}s')
 
 
 def count_time(func):
@@ -112,7 +112,7 @@ def count_time(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
-        log.debug(f'>>>> {func.__name__} 执行时长：{time.time() - start_time:.2f}s <<<<')
+        log.log(f'>>>> {func.__name__} 执行时长：{time.time() - start_time:.2f}s <<<<')
         return result
 
     return wrapper
@@ -148,7 +148,8 @@ def tail_to_head():
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(2, 4) / 46.0)
-    sleep(time_1 + time_10 + randint(1, 5) / 16)
+    # sleep(time_1 + time_10 + randint(1, 5) / 16)
+    sleep(time_3)
 
 
 def tail_to_head_faster():
@@ -245,14 +246,14 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
             else:
                 has_source_file = True
                 break
-    # log.debug(f'获取标签为 {file_tags} 的 【源文件】 {source_files} 时长：{time.time() - cur:.2f}s')
+    # log.log(f'获取标签为 {file_tags} 的 【源文件】 {source_files} 时长：{time.time() - cur:.2f}s')
     if not has_source_file or source_files is None:
         err = f'没有获取到标签为 {file_tags} 的 【源文件】，请检查'
         log.error(err)
         raise ValueError(err)
 
     # 转换文件
-    log.debug(f'转换标签为 {file_tags} 的文件')
+    log.log(f'转换标签为 {file_tags} 的文件')
     convert_file(include=file_tags)
 
     has_convert_file = False
@@ -273,7 +274,7 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
         else:
             has_convert_file = True
             break
-    # log.debug(f'获取标签为 {file_tags} 的【转换文件】{convert_files} 时长：{time.time() - cur:.2f}s')
+    # log.log(f'获取标签为 {file_tags} 的【转换文件】{convert_files} 时长：{time.time() - cur:.2f}s')
     if not has_convert_file or convert_files is None:
         log.error(f'没有获取到标签为 {file_tags} 的【解析后文件】，请检查')
         raise ValueError('没有获取到【解析后的文件】，请检查 base_dir 中内容')
@@ -416,15 +417,15 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     :param aweme_num 作品总数，用户判断滑动次数
     :param return_times 判断返回上一页时，是返回 一次还是两次
     """
-    if aweme_num > 200:
+    base_step = 7.5  # 如果作品数量少，可以步长大一点
+    if aweme_num > 40:
         focus_console()
-        aweme_num = int(input(f'当前作品数量超过200，请确认数值'))
-    base_step = 9  # 如果作品数量少，可以步长大一点
-    if 150 > aweme_num > 20:
+        aweme_num = int(input(f'当前作品数量超过200，请确认数值：'))
+        # if 150 > aweme_num > 20:
         hua(aweme_num, tail_to_head, step=base_step)
-    elif aweme_num > 150:
-        hua(aweme_num, tail_to_head, step=base_step - 1)
-    else:
+    # elif aweme_num > 150:
+    #     hua(aweme_num, tail_to_head, step=base_step - 1)
+    elif aweme_num < 21:
         log.info('作品数量小于20')
     if return_times == 1:
         # 返回一次
