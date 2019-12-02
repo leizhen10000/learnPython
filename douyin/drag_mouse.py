@@ -433,7 +433,7 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     elif return_times == 2:
         # 返回两次
         back()
-        sleep(time_10)
+        sleep(time_13)
         # 设置随机访问视频
         tea = randint(1, 10)
         if tea > 8:
@@ -510,6 +510,8 @@ def get_suren_info(*args, **kwargs):
         # 返回作品界面
         back()
         sleep(time_4)
+        # 解析文件放在这一步，防止没有获取商品信息而报错
+        _check_convert_file_exits(file_tags='promotion')
     else:
         log.info("用户没有橱窗信息")
 
@@ -528,7 +530,6 @@ def get_suren_info(*args, **kwargs):
         fly_up_to_get_all_aweme(aweme_count, return_times)
 
         _check_convert_file_exits(file_tags='zuopin')
-        _check_convert_file_exits(file_tags='promotion')
         # 存储数据入库
         log.info('存入数据库')
         handle_file(os.listdir(base_dir))
