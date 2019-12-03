@@ -311,11 +311,17 @@ def handle_file(files):
 
     conn.close()
 
+
 # # 转换 utf-16 为 utf-8
-# success = convert_file()
-# handle_file(os.listdir(base_dir))
-# clean_dir(base_dir)
-# clean_dir(source_base_dir)
+def extract():
+    success = convert_file()
+    handle_file(os.listdir(base_dir))
+    clean_dir(base_dir)
+    clean_dir(source_base_dir)
+
+if __name__ == '__main__':
+    extract()
+
 
 # # todo: 不知道能不能做去重，先清空数据再说
 # def clean():

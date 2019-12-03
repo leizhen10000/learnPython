@@ -42,7 +42,7 @@ def convert_file(exclude_file='no', include=None):
 
 def clean_dir(path):
     """删除路径下所有文件"""
-    print(f'删除 {path} 路径下的文件')
+    # print(f'删除 {path} 路径下的文件')
     file_list = os.listdir(path)
     for file in file_list:
         file_name = os.path.join(path, file)

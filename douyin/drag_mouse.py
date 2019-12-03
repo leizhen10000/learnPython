@@ -82,7 +82,7 @@ delete_x, delete_y = x + 483 + randint(-80, 70), y + 1129 + randint(-5, 20)
 
 console = 2589, 2055
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
-aweme_list_button = x + 70, y + 520
+aweme_list_button = x + 70 + randint(-60, 100), y + 520
 
 time_sample = [0.01, 0.021, 0.031, 0.023]
 time_1 = 0.1 + choice(time_sample)
@@ -90,6 +90,8 @@ time_2 = 0.2 + choice(time_sample)
 time_3 = 0.3 + choice(time_sample)
 time_4 = 0.4 + choice(time_sample)
 time_5 = 0.5 + choice(time_sample)
+time_6 = 0.6 + choice(time_sample)
+time_7 = 0.7 + choice(time_sample)
 time_8 = 0.8 + choice(time_sample)
 time_10 = 1.0 + choice(time_sample)
 time_13 = 1.3 + choice(time_sample)
@@ -112,7 +114,7 @@ def count_time(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
-        log.log(f'>>>> {func.__name__} 执行时长：{time.time() - start_time:.2f}s <<<<')
+        log.info(f'>>>> {func.__name__} 执行时长：{time.time() - start_time:.2f}s <<<<')
         return result
 
     return wrapper
@@ -142,27 +144,27 @@ def head_to_tail():
     m.dragTo(new_x, tail[1], duration=time_5)
 
 
-def tail_to_head():
+def tail_to_head_aweme():
     """向上滑动，从下到上"""
     new_x = head[0] + randint(-400, 100)
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(2, 4) / 46.0)
     # sleep(time_1 + time_10 + randint(1, 5) / 16)
-    sleep(time_3)
+    sleep(time_5 + randint(1, 3) / 16)
 
 
-def tail_to_head_faster():
+def tail_to_head_promotion():
     """向上滑动，从下到上"""
     new_x = head[0] + randint(-400, 100)
-    m.moveTo(new_x, tail[1] + randint(-300, 20))
-    m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
-             duration=randint(1, 3) / 45.0)
-    sleep(time_1 + randint(1, 5) / 15)
+    m.moveTo(new_x, tail[1] + randint(-300, 100))
+    m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, 100),
+             duration=randint(1, 3) / 30.0)
+    sleep(time_8 + randint(1, 5) / 30)
 
 
 def hua(exec_count, hua_method, step=9.0):
-    """控制 hua 划的次数"""
+    """根据总数控制 hua 划的次数"""
     count = math.ceil(exec_count / float(step)) + 1
     start = time.strftime('%H:%M:%S')
     print(F'开始时间：{start}，初始计数 {count}')
@@ -170,9 +172,20 @@ def hua(exec_count, hua_method, step=9.0):
 
     while count > 0:
         if count % 10 == 0 or count == 1:
-            print('计数', count, '耗时', f'{time.time() - start:.2f}')
+            print('计数', count, '耗时', f'{time.time() - start:.2f} s')
         count -= 1
         hua_method()
+
+
+def hua_by_times(exec_times, hua_method):
+    """根据滑动次数滑动"""
+    count = exec_times
+    # print(F'开始时间：{start}，初始计数 {count}')
+    start = time.time()
+    while count > 0:
+        count -= 1
+        hua_method()
+    print('滑动耗时', f'{time.time() - start:.2f} s')
 
 
 def click_avatar():
@@ -246,14 +259,16 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
             else:
                 has_source_file = True
                 break
-    # log.log(f'获取标签为 {file_tags} 的 【源文件】 {source_files} 时长：{time.time() - cur:.2f}s')
+    # log.info(f'获取标签为 {file_tags} 的 【源文件】 {source_files} 时长：{time.time() - cur:.2f}s')
     if not has_source_file or source_files is None:
         err = f'没有获取到标签为 {file_tags} 的 【源文件】，请检查'
         log.error(err)
-        raise ValueError(err)
+        # 不报错，改为查看内容
+        a = input(f'请查看标签为 {file_tags} 的文件是否存在')
+        # raise ValueError(err)
 
     # 转换文件
-    log.log(f'转换标签为 {file_tags} 的文件')
+    # log.info(f'转换标签为 {file_tags} 的文件')
     convert_file(include=file_tags)
 
     has_convert_file = False
@@ -274,10 +289,11 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
         else:
             has_convert_file = True
             break
-    # log.log(f'获取标签为 {file_tags} 的【转换文件】{convert_files} 时长：{time.time() - cur:.2f}s')
+    # log.info(f'获取标签为 {file_tags} 的【转换文件】{convert_files} 时长：{time.time() - cur:.2f}s')
     if not has_convert_file or convert_files is None:
         log.error(f'没有获取到标签为 {file_tags} 的【解析后文件】，请检查')
-        raise ValueError('没有获取到【解析后的文件】，请检查 base_dir 中内容')
+        a = input(f'请查看标签为 {file_tags} 的【解析后文件】')
+        # raise ValueError('没有获取到【解析后的文件】，请检查 base_dir 中内容')
     return convert_files
 
 
@@ -316,7 +332,7 @@ def check_user_in_db():
     """
     log.info('获取用户简单的数据：名称、作品数量')
     user_info = {'flag': True}
-    exclude_users = ['pangpang', 'Alliew']
+    exclude_users = ['pangpang', 'Alliew', '大王叫我来巡山', '"lp":', '啥名', '已重置']
     try:
         files = _check_convert_file_exits(file_tags='user')
     except ValueError as e:
@@ -332,10 +348,16 @@ def check_user_in_db():
             else:
                 nickname = user.get('nickname', '')
                 user_info['name'] = user.get('nickname', '')
+                uid = user.get('uid')
+                user_info['suren_id'] = uid
                 user_info['with_fusion_shop_entry'] = user.get('with_fusion_shop_entry')
                 user_info['aweme_count'] = user.get('aweme_count')
-                uid = user.get('uid')
                 aweme_count = user_info['aweme_count']
+                commerce_info = user.get('commerce_info')
+                user_info['office_info_len'] = len(commerce_info.get('offline_info_list')) \
+                    if commerce_info is not None else None
+                user_info['enterprise_verify_reason'] = user.get('enterprise_verify_reason')
+                user_info['custom_verify'] = user.get('custom_verify')  # 抖音标签，如：好物推荐官
                 break
     else:
         return user_info
@@ -371,13 +393,13 @@ WHERE a.suren_id = %s
                 log.info(f'用户 {nickname} 在数据库中不存在 or 作品信息不全')
                 user_info['flag'] = False
             else:
-                log.info(f'\n用户 {nickname} 有 {result[0][2]} 作品\n')
+                log.info(f'\n\t\t用户 {nickname} 有 【{result[0][2]} 作品\n】')
         else:
             cursor.execute(user_sql, (int(uid)))
             result = cursor.fetchone()
             count = result[0]
             if count:
-                log.info(f'\n用户 {uid} - {nickname} 有 {count} 作品\n')
+                log.info(f'\n\t\t用户 {uid} - {nickname} 有 【{count} 作品】\n')
             user_info['flag'] = True if count else False
     except:
         traceback.print_exc()
@@ -417,15 +439,19 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     :param aweme_num 作品总数，用户判断滑动次数
     :param return_times 判断返回上一页时，是返回 一次还是两次
     """
-    base_step = 7.5  # 如果作品数量少，可以步长大一点
+    # base_step = 7.5  # 如果作品数量少，可以步长大一点
     if aweme_num > 40:
-        focus_console()
-        aweme_num = int(input(f'当前作品数量超过200，请确认数值：'))
+        # focus_console()
+        # aweme_num = int(input(f'当前作品数量超过200，请确认数值：'))
         # if 150 > aweme_num > 20:
-        hua(aweme_num, tail_to_head, step=base_step)
-    # elif aweme_num > 150:
-    #     hua(aweme_num, tail_to_head, step=base_step - 1)
-    elif aweme_num < 21:
+        # hua(aweme_num, tail_to_head, step=base_step)
+        # elif aweme_num > 150:
+        #     hua(aweme_num, tail_to_head, step=base_step - 1)
+        # 修改为2， 提高执行效率
+        hua_by_times(2, tail_to_head_aweme)
+    elif aweme_num > 20:
+        hua_by_times(2, tail_to_head_aweme)
+    else:
         log.info('作品数量小于20')
     if return_times == 1:
         # 返回一次
@@ -453,7 +479,10 @@ def _back_for_times(return_times):
     """根据次数返回"""
     for i in range(return_times):
         back()
-        sleep(time_8)
+        if i == return_times - 1:
+            sleep(time_3)
+        else:
+            sleep(time_8)
 
 
 @count_time
@@ -490,13 +519,31 @@ def get_suren_info(*args, **kwargs):
     else:
         has_shop_entry = True if has_shop_entry in ['true', 'True', 'True', True] else False
 
+    # title栏，如果以下内容存在，橱窗位置会往下移动
+    enterprise_verify_reason = user_info.get('enterprise_verify_reason')  # 官方认证
+    office_info_len = user_info.get('office_info_len')  # 官方信息
+    custom_verify = user_info.get('custom_verify')  # 抖音好物推荐官
+
     if has_shop_entry:
         # 点击橱窗
-        focus_console()
-        m.moveTo(aweme_list_button[0], aweme_list_button[1])
-        click_or_not = int(input('>>> 橱窗 调整 1 or 不调整 0 '))
-        to_x, to_y = m.position()
-        m.click(to_x, to_y)
+        # focus_console()
+        aweme_x, aweme_y = aweme_list_button[0], aweme_list_button[1]
+        y_rand = randint(-6, 6)
+        hold_time = .3
+        log.info('点击橱窗，获取商品')
+        # 默认位置
+        if not enterprise_verify_reason and not office_info_len and not custom_verify:
+            m.click(aweme_x, aweme_y + 12 + y_rand, duration=hold_time)
+        if enterprise_verify_reason and not office_info_len:
+            # 如果有企业认证，添加 y值88
+            m.click(aweme_x, aweme_y + 88 + y_rand, duration=hold_time)
+        if office_info_len:
+            m.click(aweme_x, aweme_y + 136 + y_rand, duration=hold_time)
+        if custom_verify:
+            m.click(aweme_x, aweme_y + 63 + y_rand, duration=hold_time)
+        # click_or_not = int(input('>>> 橱窗 调整 1 or 不调整 0 '))
+        # to_x, to_y = m.position()
+        # m.click(to_x, to_y)
         sleep(time_5)
 
         # 获取商品总数
@@ -508,11 +555,14 @@ def get_suren_info(*args, **kwargs):
         else:
             promotion_count = int(promotion_count)
 
+        if promotion_count > 500:
+            log.info('用户商品橱窗数量大于 500，只取前 500 商品')
+            promotion_count = 500
         if promotion_count > 20:
-            hua(promotion_count, tail_to_head_faster, step=12)
+            hua(promotion_count, tail_to_head_promotion, step=20)
         # 返回作品界面
         back()
-        sleep(time_4)
+        # sleep(time_3)
         # 解析文件放在这一步，防止没有获取商品信息而报错
         _check_convert_file_exits(file_tags='promotion')
     else:
@@ -527,23 +577,22 @@ def get_suren_info(*args, **kwargs):
     else:
         aweme_count = int(aweme_count)
 
-    if has_shop_entry or aweme_count:
+    if aweme_count:
         # 作品向上滑动
         log.info(f'作品数量为 【{aweme_count}】')
+        if not has_shop_entry and aweme_count > 20:
+            log.info(f'因为没有橱窗信息，且作品数量超过20，作品只获取30个')
+            aweme_count = 30
         fly_up_to_get_all_aweme(aweme_count, return_times)
 
         _check_convert_file_exits(file_tags='zuopin')
         # 存储数据入库
-        log.info('存入数据库')
-        handle_file(os.listdir(base_dir))
-        # 清理数据
-        clean_dir(base_dir)
-        clean_dir(source_base_dir)
     else:
         log.info(f'用户 {user_info["name"]}')
         for i in range(return_times):
             back()
-            sleep(time_10)
+            if i == 0:
+                sleep(time_5)
 
 
 def roll_page():
@@ -570,8 +619,8 @@ def fetch_user(flag_num, fetch_method):
         # move_third = input('>>> 移动到第三个视频：')
         # if move_third:
         # third_x, third_y = m.position()
-        m.click(aweme_three[0], aweme_three[1] - 150 + randint(-20, 15))
-        sleep(time_5)  # 晚上延迟
+        m.click(aweme_three[0] + randint(30, 130), aweme_three[1] - 138 + randint(-20, 15))
+        sleep(time_7)  # 晚上延迟
         # else:
         #     m.click(aweme_three[0], aweme_three[1] - 150)
     # 执行滑动判断逻辑
@@ -592,22 +641,39 @@ def delete_user_in_message():
     log.info('删除消息列表中数据')
 
 
+def _before_action():
+    """执行前清理文件，避免造成数据异常、缺失"""
+    # 清理数据
+    if os.listdir(base_dir):
+        clean_dir(base_dir)
+    if os.listdir(source_base_dir):
+        clean_dir(source_base_dir)
+
+
 def action(fetch_method):
     """只获取所有作品信息"""
+    _before_action()
     flag_num = 11
 
     start = time.time()
-    log.info('\n' + '=' * 50)
+    log.info('=' * 50)
     # 点击第三个视频
     fetch_user(flag_num, fetch_method)
+    # 数据入库
+    log.info('存入数据库')
+    handle_file(os.listdir(base_dir))
+    # 清理数据
+    clean_dir(base_dir)
+    clean_dir(source_base_dir)
+    # 删除小写列表中数据
     delete_user_in_message()
     execute_time = time.time() - start
     if execute_time > 60:
         execute_minute = int(execute_time // 60)
         execute_seconds = execute_time % 60
-        log.info(f'执行时长：{execute_minute} m {execute_seconds:.2f} s')
+        log.info(f'总执行时长：{execute_minute} m {execute_seconds:.2f} s')
     else:
-        log.info(f'执行时长：{time.time() - start:.2f}')
+        log.info(f'总执行时长：{time.time() - start:.2f} s')
     log.info('=' * 50 + '\n')
     # 点击第二个视频
     # fetch_second_user(flag_num, fetch_method)
@@ -616,12 +682,16 @@ def action(fetch_method):
 
 
 if __name__ == '__main__':
+    user_nums = 0
     roll_times = 0
     while True:
         roll_times += 1
-        if roll_times < 1:
+        if roll_times < 8:
             # get_suren_info(1)
             action(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+            sleep(time_8)
+            user_nums += 1
+            print(f'已经获取 {user_nums} 个用户')
         else:
             focus_console()
             is_continue = int(input('>>> 是否继续：'))
@@ -633,6 +703,8 @@ if __name__ == '__main__':
                 #         # log.info(f'翻页次数 {roll_times}')
                 #         # action() # 执行步骤一
                 action(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+                user_nums += 1
+                print(f'已经获取 {user_nums} 个用户')
             else:
                 break
 
