@@ -478,7 +478,7 @@ def _back_for_times(return_times):
     for i in range(return_times):
         back()
         if i == return_times - 1:
-            sleep(time_3)
+            sleep(time_7)
         else:
             sleep(time_8)
 
@@ -504,9 +504,8 @@ def get_suren_info(*args, **kwargs):
         # 如果同时有多个已经入库的用户，那么会一直点击用户，然会返回
         # 这样的操作发生过于频繁会被封锁获取用户的接口
         if multiple_return_times > 2:
-            log.info('已经连续返回超过3次了，接下来全部滑动作品3次，直到获取新用户为止')
-            hua_by_times(3, tail_to_head_aweme)
-            time.sleep(time_3)
+            log.info('已经连续返回超过3次了，接下来全部滑动作品2次，直到获取新用户为止')
+            hua_by_times(2, tail_to_head_aweme)
         log.info('用户已经在数据库中存在，返回消息列表')
         _back_for_times(return_times)
         # 清理数据
