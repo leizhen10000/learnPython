@@ -228,6 +228,12 @@ def random_read_aweme():
     back()
 
 
+# 细节控制
+def slow_down_in_key_action(duration=.5):
+    """在关键节点缓慢操作，比如晚上"""
+    sleep(duration)
+
+
 base_dir = 'D:\\douyin2'
 source_base_dir = 'D:\\douyin'
 
@@ -387,6 +393,11 @@ WHERE a.suren_id = %s
     HAVING COUNT(a.aweme_id) > 21
     OR COUNT(a.aweme_id) = %s
     """
+
+    # 对插入用户埋点，根据用户是否入库统计入库比例
+    maidian_sql = """INSERT INTO douyin_maidian (suren_id, nickname, is_new, update_time)
+VALUES (%s, %s, %s, NOW())
+    """
     try:
         # 做两种查询方式的判断
         if uid is None:
@@ -404,6 +415,9 @@ WHERE a.suren_id = %s
             if count:
                 log.info(f'\n\t\t用户 {uid} - {nickname} 有 【{count} 作品】\n')
             user_info['flag'] = True if count else False
+        # 根据flag插入埋点
+        cursor.execute(maidian_sql, (str(uid), nickname, not user_info['flag']))
+        conn.commit()
     except:
         traceback.print_exc()
         conn.rollback()
@@ -436,7 +450,7 @@ def get_last_line_in_file(file_name, exclude=None):
 
 
 @count_time
-def fly_up_to_get_all_aweme(aweme_num, return_times=1):
+def fly_up_to_get_all_aweme(aweme_num, return_times=1, **kwargs):
     """向上滑动获取所有作品
 
     :param aweme_num 作品总数，用户判断滑动次数
@@ -458,9 +472,10 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
             sleep(time_5 + randint(1, 2) / 10.0)
             back()
             sleep(time_8 + randint(1, 2) / 10.0)
+        elif kwargs.get('night'):
+            slow_down_in_key_action()
         else:
             back()
-
     elif return_times == 2:
         # 返回两次
         back()
@@ -479,11 +494,13 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
 
 
 @count_time
-def _back_for_times(return_times):
+def _back_for_times(return_times, **kwargs):
     """在判断用户已经入库后，直接根据次数返回"""
     for i in range(return_times):
         back()
-        sleep(time_10)
+        sleep(time_5)
+        if kwargs.get('night'):
+            slow_down_in_key_action()
         # focus_console()
         # a = input('当前返回需要确认')
 
@@ -545,7 +562,7 @@ def get_suren_info(*args, **kwargs):
         log.info('点击橱窗，获取商品')
         # 默认位置
         if not enterprise_verify_reason and not office_info_len and not custom_verify:
-            m.click(aweme_x, aweme_y + 12 + y_rand, duration=hold_time)
+            m.click(aweme_x, aweme_y + 88 + y_rand, duration=hold_time)
         if enterprise_verify_reason and not office_info_len:
             # 如果有企业认证，添加 y值88
             m.click(aweme_x, aweme_y + 88 + y_rand, duration=hold_time)
@@ -613,7 +630,7 @@ def roll_page():
 
 
 @count_time
-def fetch_user(flag_num, fetch_method):
+def fetch_user(flag_num, fetch_method, **kwargs):
     """点击第三个用户，获取信息"""
     chose_third = randint(1, 10)
     click_title_or_aweme_third = chose_third > flag_num
@@ -627,7 +644,10 @@ def fetch_user(flag_num, fetch_method):
     else:
         log.info('直接进入主页')
         m.click(aweme_three[0], aweme_three[1] - 138 + randint(-20, 10))
-        sleep(time_7)  # 晚上延迟
+        sleep(time_5)
+        if kwargs.get('night'):
+            # 晚上延迟
+            slow_down_in_key_action()
     # 执行滑动判断逻辑
     fetch_method(return_times=return_times_third)
 
@@ -644,6 +664,7 @@ def delete_user_in_message():
     # m.moveTo(delete_x, delete_y, duration=.1)
     m.click(delete_x, delete_y)
     log.info('删除消息列表中数据')
+    sleep(time_5)
 
 
 def _before_action():
@@ -680,10 +701,6 @@ def action(fetch_method, *args):
     else:
         log.info(f'总执行时长：{time.time() - start:.2f} s')
     log.info('=' * 50 + '\n')
-    # 点击第二个视频
-    # fetch_second_user(flag_num, fetch_method)
-    # 点击第一个视频
-    # fetch_first_user(flag_num, fetch_method)
 
 
 if __name__ == '__main__':
@@ -693,7 +710,7 @@ if __name__ == '__main__':
     multiple_return_times = 0
     while True:
         roll_times += 1
-        if roll_times < 50:
+        if roll_times < 2:
             # get_suren_info(1)
             action(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
             sleep(time_8)
