@@ -25,6 +25,7 @@
 """
 # 屏幕分辨率
 import ctypes
+import datetime
 import json
 import math
 import os
@@ -450,7 +451,7 @@ def get_last_line_in_file(file_name, exclude=None):
 
 
 @count_time
-def fly_up_to_get_all_aweme(aweme_num, return_times=1, **kwargs):
+def _fly_up_to_get_all_aweme(aweme_num, return_times=1, **kwargs):
     """向上滑动获取所有作品
 
     :param aweme_num 作品总数，用户判断滑动次数
@@ -529,7 +530,7 @@ def get_suren_info(*args, **kwargs):
             log.info('已经连续返回超过3次了，接下来全部滑动作品2次，直到获取新用户为止')
             hua_by_times(2, tail_to_head_aweme)
         log.info('用户已经在数据库中存在，返回消息列表')
-        _back_for_times(return_times)
+        _back_for_times(return_times, **kwargs)
         # 清理数据
         clean_dir(base_dir)
         clean_dir(source_base_dir)
@@ -612,7 +613,7 @@ def get_suren_info(*args, **kwargs):
         if not has_shop_entry and aweme_count > 20:
             log.info(f'因为没有橱窗信息，且作品数量超过20，作品只获取30个')
             aweme_count = 30
-        fly_up_to_get_all_aweme(aweme_count, return_times)
+        _fly_up_to_get_all_aweme(aweme_count, return_times, **kwargs)
 
         _check_convert_file_exits(file_tags='zuopin')
         # 存储数据入库
@@ -649,7 +650,7 @@ def fetch_user(flag_num, fetch_method, **kwargs):
             # 晚上延迟
             slow_down_in_key_action()
     # 执行滑动判断逻辑
-    fetch_method(return_times=return_times_third)
+    fetch_method(return_times=return_times_third, **kwargs)
 
 
 @count_time
@@ -676,7 +677,7 @@ def _before_action():
         clean_dir(source_base_dir)
 
 
-def action(fetch_method, *args):
+def action(fetch_method, **kwargs):
     """只获取所有作品信息"""
     _before_action()
     flag_num = 11
@@ -684,7 +685,7 @@ def action(fetch_method, *args):
     start = time.time()
     log.info('=' * 50)
     # 点击第三个视频
-    fetch_user(flag_num, fetch_method)
+    fetch_user(flag_num, fetch_method, **kwargs)
     # 数据入库
     log.info('存入数据库')
     handle_file(os.listdir(base_dir))
@@ -704,15 +705,16 @@ def action(fetch_method, *args):
 
 
 if __name__ == '__main__':
-    invalid_user_nums = 0
     user_nums = 0
     roll_times = 0
     multiple_return_times = 0
+    now = datetime.datetime.now()
+    is_night = now.hour > 17 and now.minute > 30
     while True:
         roll_times += 1
         if roll_times < 2:
             # get_suren_info(1)
-            action(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+            action(get_suren_info, night=is_night)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
             sleep(time_8)
             user_nums += 1
             print(f'已经获取 {user_nums} 个用户')
@@ -726,7 +728,7 @@ if __name__ == '__main__':
                 #         # roll_times += 1
                 #         # log.info(f'翻页次数 {roll_times}')
                 #         # action() # 执行步骤一
-                action(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+                action(get_suren_info, night=is_night)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
                 user_nums += 1
                 print(f'已经获取 {user_nums} 个用户')
             else:
