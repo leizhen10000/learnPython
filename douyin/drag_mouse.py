@@ -72,7 +72,7 @@ tail = x + 762, y + 1630
 aweme_one = x + 200 + randint(1, 5), y + 400
 aweme_two = x + 130 + randint(5, 10), y + 850
 # 分享用户标签时的位置，整个标签都可以点击
-aweme_three = x + 135 + randint(-60, 190), y + 1400
+aweme_three = x + 135 + randint(-40, 190), y + 1400
 # aweme_three = x + 322 + randint(-250, 130), y + 1527 + randint(-40, 50)
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
@@ -358,6 +358,9 @@ def check_user_in_db():
                     if commerce_info is not None else None
                 user_info['enterprise_verify_reason'] = user.get('enterprise_verify_reason')
                 user_info['custom_verify'] = user.get('custom_verify')  # 抖音标签，如：好物推荐官
+                if int(aweme_count) == 20:
+                    # 由于爬取的问题，有些作品数为20的用户全部有问题
+                    return user_info
                 break
     else:
         return user_info
@@ -449,12 +452,15 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
         log.info('作品数量小于20')
         need_return_wait = True
     if return_times == 1:
-        # 返回一次
-        back()
         # 由于分析文件内容置后，所以这里的等待时间可以去除
         # 如果直接从作品返回需要等待时间
         if need_return_wait:
+            sleep(time_5 + randint(1, 2) / 10.0)
+            back()
             sleep(time_8 + randint(1, 2) / 10.0)
+        else:
+            back()
+
     elif return_times == 2:
         # 返回两次
         back()
@@ -474,13 +480,12 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
 
 @count_time
 def _back_for_times(return_times):
-    """根据次数返回"""
+    """在判断用户已经入库后，直接根据次数返回"""
     for i in range(return_times):
         back()
-        if i == return_times - 1:
-            sleep(time_7)
-        else:
-            sleep(time_8)
+        sleep(time_10)
+        # focus_console()
+        # a = input('当前返回需要确认')
 
 
 @count_time
@@ -633,7 +638,7 @@ def delete_user_in_message():
     convertX, convertY = 65536 * aweme_three[0] // 3840 + 1, 65536 * aweme_three[1] // 2160 + 1
     ctypes.windll.user32.SetCursorPos(aweme_three[0], aweme_three[1])
     ctypes.windll.user32.mouse_event(2, convertX, convertY, 0, 0)
-    sleep(0.75)
+    sleep(0.9)
     ctypes.windll.user32.mouse_event(4, convertX, convertY, 0, 0)
 
     # m.moveTo(delete_x, delete_y, duration=.1)
@@ -682,12 +687,13 @@ def action(fetch_method, *args):
 
 
 if __name__ == '__main__':
+    invalid_user_nums = 0
     user_nums = 0
     roll_times = 0
     multiple_return_times = 0
     while True:
         roll_times += 1
-        if roll_times < 8:
+        if roll_times < 50:
             # get_suren_info(1)
             action(get_suren_info)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
             sleep(time_8)
