@@ -151,7 +151,7 @@ def tail_to_head_aweme():
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(2, 4) / 46.0)
     # sleep(time_1 + time_10 + randint(1, 5) / 16)
-    sleep(time_5 + randint(1, 3) / 16)
+    sleep(time_6 + randint(1, 3) / 30)
 
 
 def tail_to_head_promotion():
@@ -439,24 +439,22 @@ def fly_up_to_get_all_aweme(aweme_num, return_times=1):
     :param aweme_num 作品总数，用户判断滑动次数
     :param return_times 判断返回上一页时，是返回 一次还是两次
     """
-    # base_step = 7.5  # 如果作品数量少，可以步长大一点
+    need_return_wait = False
     if aweme_num > 40:
-        # focus_console()
-        # aweme_num = int(input(f'当前作品数量超过200，请确认数值：'))
-        # if 150 > aweme_num > 20:
-        # hua(aweme_num, tail_to_head, step=base_step)
-        # elif aweme_num > 150:
-        #     hua(aweme_num, tail_to_head, step=base_step - 1)
         # 修改为2， 提高执行效率
-        hua_by_times(2, tail_to_head_aweme)
+        hua_by_times(3, tail_to_head_aweme)
     elif aweme_num > 20:
         hua_by_times(2, tail_to_head_aweme)
     else:
         log.info('作品数量小于20')
+        need_return_wait = True
     if return_times == 1:
         # 返回一次
         back()
-        sleep(time_8 + randint(1, 2) / 10.0)
+        # 由于分析文件内容置后，所以这里的等待时间可以去除
+        # 如果直接从作品返回需要等待时间
+        if need_return_wait:
+            sleep(time_8 + randint(1, 2) / 10.0)
     elif return_times == 2:
         # 返回两次
         back()
@@ -500,13 +498,23 @@ def get_suren_info(*args, **kwargs):
     # 判断用户是否已经在数据库中，且包含作品信息
     user_info = check_user_in_db()
     flag = user_info.get('flag')
+    global multiple_return_times
     if flag:
+        multiple_return_times += 1
+        # 如果同时有多个已经入库的用户，那么会一直点击用户，然会返回
+        # 这样的操作发生过于频繁会被封锁获取用户的接口
+        if multiple_return_times > 2:
+            log.info('已经连续返回超过3次了，接下来全部滑动作品3次，直到获取新用户为止')
+            hua_by_times(3, tail_to_head_aweme)
+            time.sleep(time_3)
         log.info('用户已经在数据库中存在，返回消息列表')
         _back_for_times(return_times)
         # 清理数据
         clean_dir(base_dir)
         clean_dir(source_base_dir)
         return
+    else:
+        multiple_return_times = 0
 
     # 判断是否有商品橱窗
     # focus_console()
@@ -529,7 +537,7 @@ def get_suren_info(*args, **kwargs):
         # focus_console()
         aweme_x, aweme_y = aweme_list_button[0], aweme_list_button[1]
         y_rand = randint(-6, 6)
-        hold_time = .3
+        hold_time = .1
         log.info('点击橱窗，获取商品')
         # 默认位置
         if not enterprise_verify_reason and not office_info_len and not custom_verify:
@@ -555,9 +563,9 @@ def get_suren_info(*args, **kwargs):
         else:
             promotion_count = int(promotion_count)
 
-        if promotion_count > 500:
-            log.info('用户商品橱窗数量大于 500，只取前 500 商品')
-            promotion_count = 500
+        if promotion_count > 300:
+            log.info('用户商品橱窗数量大于 300，只取前 300 商品')
+            promotion_count = 300
         if promotion_count > 20:
             hua(promotion_count, tail_to_head_promotion, step=20)
         # 返回作品界面
@@ -614,15 +622,8 @@ def fetch_user(flag_num, fetch_method):
         click_avatar()  # 点击头像，进入主页
     else:
         log.info('直接进入主页')
-        # focus_console()
-        # m.moveTo(aweme_three[0], aweme_three[1] - 150, duration=.2)
-        # move_third = input('>>> 移动到第三个视频：')
-        # if move_third:
-        # third_x, third_y = m.position()
-        m.click(aweme_three[0] + randint(30, 130), aweme_three[1] - 138 + randint(-20, 15))
+        m.click(aweme_three[0], aweme_three[1] - 138 + randint(-20, 10))
         sleep(time_7)  # 晚上延迟
-        # else:
-        #     m.click(aweme_three[0], aweme_three[1] - 150)
     # 执行滑动判断逻辑
     fetch_method(return_times=return_times_third)
 
@@ -633,10 +634,10 @@ def delete_user_in_message():
     convertX, convertY = 65536 * aweme_three[0] // 3840 + 1, 65536 * aweme_three[1] // 2160 + 1
     ctypes.windll.user32.SetCursorPos(aweme_three[0], aweme_three[1])
     ctypes.windll.user32.mouse_event(2, convertX, convertY, 0, 0)
-    sleep(0.8)
+    sleep(0.75)
     ctypes.windll.user32.mouse_event(4, convertX, convertY, 0, 0)
 
-    m.moveTo(delete_x, delete_y, duration=.1)
+    # m.moveTo(delete_x, delete_y, duration=.1)
     m.click(delete_x, delete_y)
     log.info('删除消息列表中数据')
 
@@ -650,7 +651,7 @@ def _before_action():
         clean_dir(source_base_dir)
 
 
-def action(fetch_method):
+def action(fetch_method, *args):
     """只获取所有作品信息"""
     _before_action()
     flag_num = 11
@@ -684,6 +685,7 @@ def action(fetch_method):
 if __name__ == '__main__':
     user_nums = 0
     roll_times = 0
+    multiple_return_times = 0
     while True:
         roll_times += 1
         if roll_times < 8:

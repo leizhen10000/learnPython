@@ -22,7 +22,7 @@
                ┗┻┛ ┗┻┛
 """
 # 为线程定义一个函数
-import thread
+import _thread
 import time
 
 
@@ -36,8 +36,8 @@ def print_time(thread_name, delay):
 
 # 创建两个线程
 try:
-    thread.start_new_thread(print_time, ("Thread-1", 2,))
-    thread.start_new_thread(print_time, ("Thread-2", 4,))
+    _thread.start_new_thread(print_time, ("Thread-1", 2,))
+    _thread.start_new_thread(print_time, ("Thread-2", 4,))
 except Exception as e:
     print("Error: unable to start thread")
     print(e)
