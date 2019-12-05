@@ -241,7 +241,7 @@ base_dir = 'D:\\douyin2'
 source_base_dir = 'D:\\douyin'
 
 
-def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
+def _check_convert_file_exits(times=15, interval=.2, file_tags='all'):
     """检验转换的文件/源文件是否存在
 
     :param times: 等待循环次数
@@ -252,10 +252,10 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     # 等待源文件出现
     has_source_file = False
     source_files = None
-    cur = time.time()
+    # cur = time.time()
     source_times = times
     while source_times > 0:
-        if source_times > 15:
+        if source_times > 10:
             sleep(step_interval)
             source_times -= 1
         else:
@@ -282,10 +282,10 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
 
     has_convert_file = False
     convert_files = None
-    cur = time.time()
+    # cur = time.time()
     convert_times = times
     while convert_times > 0:
-        if convert_times > 15:
+        if convert_times > 10:
             sleep(step_interval)
             convert_times -= 1
         else:
@@ -352,8 +352,8 @@ def check_user_in_db():
                 return user_info
             else:
                 nickname = user.get('nickname', '')
-                user_info['name'] = user.get('nickname', '')
                 uid = user.get('uid')
+                user_info['name'] = user.get('nickname', '')
                 user_info['suren_id'] = uid
                 user_info['with_fusion_shop_entry'] = user.get('with_fusion_shop_entry')
                 user_info['aweme_count'] = user.get('aweme_count')
@@ -396,10 +396,6 @@ OR COUNT(a.aweme_id) = %s
     OR COUNT(a.aweme_id) = %s
     """
 
-    # 对插入用户埋点，根据用户是否入库统计入库比例
-    maidian_sql = """INSERT INTO douyin_maidian (suren_id, nickname, is_new, update_time)
-VALUES (%s, %s, %s, NOW())
-    """
     try:
         # 做两种查询方式的判断
         if uid is None:
@@ -413,13 +409,11 @@ VALUES (%s, %s, %s, NOW())
         else:
             cursor.execute(user_sql, (int(uid), int(aweme_count)))
             result = cursor.fetchone()
-            count = result[0]
-            if count:
+            count = None
+            if result is not None and len(result) > 0:
+                count = result[0]
                 log.info(f'\n\t\t用户 {uid} - {nickname} 有 【{count} 作品】\n')
             user_info['flag'] = True if count else False
-        # 根据flag插入埋点
-        cursor.execute(maidian_sql, (str(uid), nickname, not user_info['flag']))
-        conn.commit()
     except:
         traceback.print_exc()
         conn.rollback()
@@ -486,7 +480,6 @@ def _fly_up_to_get_all_aweme(aweme_num):
     #         log.info('进入查看视频')
     #         random_read_aweme()
     #
-    #     # 返回消息列表
     #     back()
     #     print('返回第二次')
     #     sleep(time_10)
@@ -558,7 +551,8 @@ class SurenInfo:
             if multiple_return_times > 2:
                 log.info('已经连续返回超过3次了，接下来全部滑动作品2次，直到获取新用户为止')
                 hua_by_times(2, tail_to_head_aweme)
-            log.info('返回消息列表')
+            log.info('从用户首页返回消息列表')
+            sleep(time_5)
             _back_for_times(return_times=self.return_times)
             clean_data()
         return has_next
@@ -656,6 +650,37 @@ class SurenInfo:
                 if i == 0:
                     sleep(time_3)
 
+    def user_maidian(self):
+        """用户埋点
+
+        在所有的操作完成后才能埋点，否则执行一半报错，也会计入埋点数据，
+        导致埋点分析不精确
+        """
+        # 查询数据库
+        db_pool = get_db_tool()
+        conn = db_pool.connection()
+        cursor = conn.cursor()
+
+        # 对插入用户埋点，根据用户是否入库统计入库比例
+        maidian_sql = """INSERT INTO douyin_maidian (suren_id, nickname, is_new, update_time)
+        VALUES (%s, %s, %s, NOW())
+            """
+
+        try:
+            uid = self._user_info['suren_id']
+            nickname = self._user_info['nickname']
+            flag = not self._user_info['flag']
+            # 根据flag插入埋点
+            cursor.execute(maidian_sql, (str(uid), nickname, flag))
+            conn.commit()
+            log.info(f'用户数据埋点，用户 {nickname}, suren_id: {uid}, 是否为新用户: {flag}')
+        except:
+            traceback.print_exc()
+            conn.rollback()
+        finally:
+            cursor.close()
+            conn.close()
+
 
 @count_time
 def get_suren_info(*args, **kwargs):
@@ -724,12 +749,12 @@ def _before_action():
 
 def action(**kwargs):
     """只获取所有作品信息"""
-    _before_action()
     flag_num = 11
 
     start = time.time()
     log.info('=' * 50)
     try:
+        _before_action()
         # 点击第三个视频
         return_times = fetch_user(flag_num, **kwargs)
         # 执行滑动判断逻辑
@@ -743,6 +768,8 @@ def action(**kwargs):
         # 删除小写列表中数据
         delete_user_in_message()
     except FileException as e:
+        if 'user' in e.error_info:
+            pass
         if 'promotion' in e.error_info:
             _back_for_times(return_times=1)
             # 返回之后，消息列表需要停滞时间
