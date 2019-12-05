@@ -73,7 +73,7 @@ tail = x + 762, y + 1630
 aweme_one = x + 200 + randint(1, 5), y + 400
 aweme_two = x + 130 + randint(5, 10), y + 850
 # 分享用户标签时的位置，整个标签都可以点击
-aweme_three = x + 135 + randint(-30, 190), y + 1400
+aweme_three = x + 135 + randint(-40, 190), y + 1400
 # aweme_three = x + 322 + randint(-250, 130), y + 1527 + randint(-40, 50)
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
@@ -102,7 +102,9 @@ time_20 = 2.0 + choice(time_sample)
 
 
 def back():
-    m.click(x, y)
+    # m.click(x, y)
+    # 修改为输入esc键，防止误触
+    m.press('esc')
 
 
 def sleep(seconds):
@@ -269,10 +271,9 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     # log.info(f'获取标签为 {file_tags} 的 【源文件】 {source_files} 时长：{time.time() - cur:.2f}s')
     if not has_source_file or source_files is None:
         err = f'没有获取到标签为 {file_tags} 的 【源文件】，请检查'
-        log.error(err)
         # 不报错，改为查看内容
-        a = input(f'请查看标签为 {file_tags} 的文件是否存在')
-        # raise ValueError(err)
+        # a = input(f'请查看标签为 {file_tags} 的【源文件】是否存在')
+        raise FileException(err)
 
     # 转换文件
     # log.info(f'转换标签为 {file_tags} 的文件')
@@ -310,11 +311,9 @@ def get_promotion_count(has_shop_entry):
     # 没有商品橱窗，直接返回商品数为0
     if not has_shop_entry:
         return 0
-    try:
-        files = _check_convert_file_exits(file_tags='promotion')
-    except ValueError:
-        log.error('解析 商品 文件失败，请检查 base_dir 中的内容')
-        return
+
+    files = _check_convert_file_exits(file_tags='promotion')
+
     if len(files) != 1:
         raise Exception(f"当前有两个商品文件，请检查 {base_dir} 中的内容")
     file_name = os.path.join(base_dir, files[0])
@@ -340,10 +339,8 @@ def check_user_in_db():
     log.info('获取用户简单的数据：名称、作品数量')
     user_info = {'flag': True}
     exclude_users = ['pangpang', 'Alliew', '大王叫我来巡山', '"lp":', '啥名', '已重置']
-    try:
-        files = _check_convert_file_exits(file_tags='user')
-    except ValueError as e:
-        raise Exception(e)
+
+    files = _check_convert_file_exits(file_tags='user')
 
     for file in files:
         file_name = os.path.join(base_dir, file)
@@ -491,12 +488,11 @@ def _fly_up_to_get_all_aweme(aweme_num):
     #     sleep(time_10)
 
 
-def _back_for_times(**kwargs):
+def _back_for_times(return_times, duration=time_3):
     """在判断用户已经入库后，直接根据次数返回"""
-    return_times = kwargs.get('return_times')
     for i in range(return_times):
         back()
-        sleep(time_3)
+        sleep(duration)
         # focus_console()
         # a = input('当前返回需要确认')
 
@@ -508,9 +504,21 @@ def clean_data():
     clean_dir(source_base_dir)
 
 
+class FileException(Exception):
+    """文件没有存入异常"""
+
+    def __init__(self, error_info):
+        super(FileException, self).__init__()
+        self.error_info = error_info
+
+    def __str__(self):
+        return self.error_info
+
+
 class SurenInfo:
     def __init__(self, return_times, *args, **kwargs):
         self.return_times = return_times
+        self._has_shop_entry = None
 
         log.info('获取素人信息')
 
@@ -550,15 +558,10 @@ class SurenInfo:
             clean_data()
         return has_next
 
-    def _back_in_times(self):
-        """在判断用户已经入库后，直接根据次数返回"""
-        for i in range(self.return_times):
-            back()
-            sleep(time_3)
-
     def more_detail(self):
         """获取更多的内容，如橱窗、作品"""
         self.promotion_info()
+        self.aweme_info()
 
     def promotion_info(self):
         """橱窗信息"""
@@ -659,7 +662,7 @@ def get_suren_info(*args, **kwargs):
     if return_times is None:
         log.error('返回次数必须给定')
         raise Exception('返回次数必须输入')
-    suren_info = SurenInfo(return_times=return_times)
+    SurenInfo(return_times=return_times)
 
 
 def roll_page():
@@ -668,12 +671,12 @@ def roll_page():
 
 
 @count_time
-def fetch_user(flag_num, fetch_method, **kwargs):
+def fetch_user(flag_num, **kwargs):
     """点击第三个用户，获取信息"""
-    chose_third = randint(1, 10)
-    click_title_or_aweme_third = chose_third > flag_num
-    return_times_third = 2 if click_title_or_aweme_third else 1
-    if click_title_or_aweme_third:
+    chose = randint(1, 10)
+    click_title_or_aweme = chose > flag_num
+    return_times = 2 if click_title_or_aweme else 1
+    if click_title_or_aweme:
         log.info('点击头像进入视频后，再进入主页')
         m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 20.0)
         sleep(time_18)
@@ -686,8 +689,7 @@ def fetch_user(flag_num, fetch_method, **kwargs):
         if kwargs.get('night'):
             # 晚上延迟
             slow_down_in_key_action(duration=time_8)
-    # 执行滑动判断逻辑
-    get_suren_info(return_times=return_times_third, **kwargs)
+    return return_times
 
 
 @count_time
@@ -714,23 +716,34 @@ def _before_action():
         clean_dir(source_base_dir)
 
 
-def action(fetch_method, **kwargs):
+def action(**kwargs):
     """只获取所有作品信息"""
     _before_action()
     flag_num = 11
 
     start = time.time()
     log.info('=' * 50)
-    # 点击第三个视频
-    fetch_user(flag_num, get_suren_info, **kwargs)
-    # 数据入库
-    log.info('存入数据库')
-    handle_file(os.listdir(base_dir))
-    # 清理数据
-    clean_dir(base_dir)
-    clean_dir(source_base_dir)
-    # 删除小写列表中数据
-    delete_user_in_message()
+    try:
+        # 点击第三个视频
+        return_times = fetch_user(flag_num, **kwargs)
+        # 执行滑动判断逻辑
+        get_suren_info(return_times=return_times, callback=action)
+        # 数据入库
+        log.info('存入数据库')
+        handle_file(os.listdir(base_dir))
+        # 清理数据
+        clean_dir(base_dir)
+        clean_dir(source_base_dir)
+        # 删除小写列表中数据
+        delete_user_in_message()
+    except FileException as e:
+        log.error(e.error_info)
+        if 'promotion' in e.error_info:
+            _back_for_times(return_times=1)
+            # 返回之后，消息列表需要停滞时间
+            sleep(time_5)
+        else:
+            input(f'{e.error_info} \n请手动操作')
     execute_time = time.time() - start
     if execute_time > 60:
         execute_minute = int(execute_time // 60)
@@ -749,9 +762,9 @@ if __name__ == '__main__':
     is_night = now.hour > 17 and now.minute > 30
     while True:
         roll_times += 1
-        if roll_times < 2:
+        if roll_times < 251:
             # get_suren_info(1)
-            action(get_suren_info, night=is_night)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+            action(night=is_night)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
             sleep(time_8)
             user_nums += 1
             print(f'已经获取 {user_nums} 个用户')
@@ -765,7 +778,7 @@ if __name__ == '__main__':
                 #         # roll_times += 1
                 #         # log.info(f'翻页次数 {roll_times}')
                 #         # action() # 执行步骤一
-                action(get_suren_info, night=is_night)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
+                action(night=is_night)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
                 user_nums += 1
                 print(f'已经获取 {user_nums} 个用户')
             else:
