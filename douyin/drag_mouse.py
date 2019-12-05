@@ -73,7 +73,7 @@ tail = x + 762, y + 1630
 aweme_one = x + 200 + randint(1, 5), y + 400
 aweme_two = x + 130 + randint(5, 10), y + 850
 # 分享用户标签时的位置，整个标签都可以点击
-aweme_three = x + 135 + randint(-40, 190), y + 1400
+aweme_three = x + 135 + randint(-30, 190), y + 1400
 # aweme_three = x + 322 + randint(-250, 130), y + 1527 + randint(-40, 50)
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
@@ -152,7 +152,7 @@ def tail_to_head_aweme():
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(2, 4) / 46.0)
     # sleep(time_1 + time_10 + randint(1, 5) / 16)
-    sleep(time_6 + randint(1, 3) / 30)
+    sleep(time_4 + randint(1, 3) / 30)
 
 
 def tail_to_head_promotion():
@@ -161,7 +161,7 @@ def tail_to_head_promotion():
     m.moveTo(new_x, tail[1] + randint(-300, 100))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, 100),
              duration=randint(1, 3) / 30.0)
-    sleep(time_8 + randint(1, 5) / 30)
+    sleep(time_6 + randint(1, 5) / 30)
 
 
 def hua(exec_count, hua_method, step=9.0):
@@ -451,7 +451,7 @@ def get_last_line_in_file(file_name, exclude=None):
 
 
 @count_time
-def _fly_up_to_get_all_aweme(aweme_num, return_times=1, **kwargs):
+def _fly_up_to_get_all_aweme(aweme_num):
     """向上滑动获取所有作品
 
     :param aweme_num 作品总数，用户判断滑动次数
@@ -466,44 +466,187 @@ def _fly_up_to_get_all_aweme(aweme_num, return_times=1, **kwargs):
     else:
         log.info('作品数量小于20')
         need_return_wait = True
-    if return_times == 1:
-        # 由于分析文件内容置后，所以这里的等待时间可以去除
-        # 如果直接从作品返回需要等待时间
-        if need_return_wait:
-            sleep(time_5 + randint(1, 2) / 10.0)
-            back()
-            sleep(time_8 + randint(1, 2) / 10.0)
-        elif kwargs.get('night'):
-            slow_down_in_key_action()
-        else:
-            back()
-    elif return_times == 2:
-        # 返回两次
+    # 由于分析文件内容置后，所以这里的等待时间可以去除
+    # 如果直接从作品返回需要等待时间
+    if need_return_wait:
+        sleep(time_5 + randint(1, 2) / 10.0)
         back()
-        print('返回一次')
-        sleep(time_10)
-        # 设置随机访问视频
-        tea = randint(1, 10)
-        if tea > 8:
-            log.info('进入查看视频')
-            random_read_aweme()
-
-        # 返回消息列表
+        sleep(time_8 + randint(1, 2) / 10.0)
+    else:
         back()
-        print('返回第二次')
-        sleep(time_10)
+    # elif return_times == 2:
+    #     # 返回两次
+    #     back()
+    #     print('返回一次')
+    #     sleep(time_10)
+    #     # 设置随机访问视频
+    #     tea = randint(1, 10)
+    #     if tea > 8:
+    #         log.info('进入查看视频')
+    #         random_read_aweme()
+    #
+    #     # 返回消息列表
+    #     back()
+    #     print('返回第二次')
+    #     sleep(time_10)
 
 
-@count_time
-def _back_for_times(return_times, **kwargs):
+def _back_for_times(**kwargs):
     """在判断用户已经入库后，直接根据次数返回"""
+    return_times = kwargs.get('return_times')
     for i in range(return_times):
         back()
-        sleep(time_5)
-        if kwargs.get('night'):
-            slow_down_in_key_action()
+        sleep(time_3)
         # focus_console()
         # a = input('当前返回需要确认')
+
+
+def clean_data():
+    """清理数据"""
+    log.info('清空数据')
+    clean_dir(base_dir)
+    clean_dir(source_base_dir)
+
+
+class SurenInfo:
+    def __init__(self, return_times, *args, **kwargs):
+        self.return_times = return_times
+
+        log.info('获取素人信息')
+
+        self._user_info = check_user_in_db()
+        # 判断用户是否已经在数据库中，且包含作品信息
+        # 注意：在 check_user_in_db() 方法中，返回的flag=True，
+        #   表示用户在数据库中，取反则意味着不是新用户，故逻辑上要加 not
+        self._new_user_flag = not self._user_info.get('flag')
+        if self.return_depends_on_flag():
+            self.more_detail()
+        pass
+
+    def return_depends_on_flag(self):
+        """根据 flag 判断下一步操作
+
+        如果用户是新用户，则进一步获取数据；
+        否则，直接返回消息列表
+
+        :return has_next: 判断下一步操作，
+                          True：进入用户橱窗和作品操作
+                          False：意味着需要直接返回，该操作在内容中有实现
+        """
+        has_next = False
+        global multiple_return_times
+        if self._new_user_flag:
+            multiple_return_times = 0
+            has_next = True
+        else:
+            multiple_return_times += 1
+            # 如果同时有多个已经入库的用户，那么会一直点击用户，然会返回
+            # 这样的操作发生过于频繁会被封锁获取用户的接口
+            if multiple_return_times > 2:
+                log.info('已经连续返回超过3次了，接下来全部滑动作品2次，直到获取新用户为止')
+                hua_by_times(2, tail_to_head_aweme)
+            log.info('用户已经在数据库中存在，返回消息列表')
+            _back_for_times(return_times=self.return_times)
+            clean_data()
+        return has_next
+
+    def _back_in_times(self):
+        """在判断用户已经入库后，直接根据次数返回"""
+        for i in range(self.return_times):
+            back()
+            sleep(time_3)
+
+    def more_detail(self):
+        """获取更多的内容，如橱窗、作品"""
+        self.promotion_info()
+
+    def promotion_info(self):
+        """橱窗信息"""
+        # 判断是否有商品橱窗
+        # focus_console()
+        # has_aweme = int(input('>>> 获取 橱窗 1 or 作品 2 or 返回 0：'))
+        has_shop_entry = self._user_info.get('with_fusion_shop_entry')  # 是否有橱窗
+        if has_shop_entry is None:
+            log.info('获取橱窗失败')
+            focus_console()
+            has_shop_entry = int(input('>>> 获取 橱窗 1 or 作品 2 or 返回 0：'))
+        else:
+            has_shop_entry = True if has_shop_entry in ['true', 'True', 'True', True] else False
+        self._has_shop_entry = has_shop_entry
+
+        # title栏，如果以下内容存在，橱窗位置会往下移动
+        enterprise_verify_reason = self._user_info.get('enterprise_verify_reason')  # 官方认证
+        office_info_len = self._user_info.get('office_info_len')  # 官方信息
+        custom_verify = self._user_info.get('custom_verify')  # 抖音好物推荐官
+
+        if has_shop_entry:
+            # 点击橱窗
+            # focus_console()
+            aweme_x, aweme_y = aweme_list_button[0], aweme_list_button[1]
+            y_rand = randint(-6, 6)
+            hold_time = .1
+            log.info('点击橱窗，获取商品')
+            # 默认位置
+            if not enterprise_verify_reason and not office_info_len and not custom_verify:
+                m.click(aweme_x, aweme_y + 12 + y_rand, duration=hold_time)
+            if enterprise_verify_reason and not office_info_len:
+                # 如果有企业认证，添加 y值88
+                m.click(aweme_x, aweme_y + 88 + y_rand, duration=hold_time)
+            if office_info_len:
+                m.click(aweme_x, aweme_y + 136 + y_rand, duration=hold_time)
+            if custom_verify:
+                m.click(aweme_x, aweme_y + 63 + y_rand, duration=hold_time)
+            # click_or_not = int(input('>>> 橱窗 调整 1 or 不调整 0 '))
+            # to_x, to_y = m.position()
+            # m.click(to_x, to_y)
+            sleep(time_5)
+
+            # 获取商品总数
+            promotion_count = get_promotion_count(has_shop_entry)
+            if promotion_count is None and has_shop_entry:
+                log.info('获取商品总数失败')
+                focus_console()
+                promotion_count = int(input('>>> 商品总数: '))
+            else:
+                promotion_count = int(promotion_count)
+
+            if promotion_count > 300:
+                log.info('用户商品橱窗数量大于 300，只取前 300 商品')
+                promotion_count = 300
+            if promotion_count > 20:
+                hua(promotion_count, tail_to_head_promotion, step=20)
+            # 返回作品界面
+            back()
+            # sleep(time_3)
+            # 解析文件放在这一步，防止没有获取商品信息而报错
+            _check_convert_file_exits(file_tags='promotion')
+        else:
+            log.info("用户没有橱窗信息")
+
+    def aweme_info(self):
+        """获取作品信息"""
+        aweme_count = self._user_info.get('aweme_count')
+        if aweme_count is None:
+            log.info('没有获取作品数量')
+            m.click(console[0], console[1])
+            aweme_count = int(input('>>> 请输入作品总数：'))
+        else:
+            aweme_count = int(aweme_count)
+
+        if aweme_count:
+            # 作品向上滑动
+            log.info(f'作品数量为 【{aweme_count}】')
+            if not self._has_shop_entry and aweme_count > 20:
+                log.info(f'因为没有橱窗信息，且作品数量超过20，作品只获取30个')
+                aweme_count = 30
+            _fly_up_to_get_all_aweme(aweme_count)
+            _check_convert_file_exits(file_tags='zuopin')
+        else:
+            log.info(f'用户 {self._user_info["name"]}')
+            for i in range(self.return_times):
+                back()
+                if i == 0:
+                    sleep(time_3)
 
 
 @count_time
@@ -516,113 +659,7 @@ def get_suren_info(*args, **kwargs):
     if return_times is None:
         log.error('返回次数必须给定')
         raise Exception('返回次数必须输入')
-    # sleep(.1)
-    log.info('获取素人信息')
-    # 判断用户是否已经在数据库中，且包含作品信息
-    user_info = check_user_in_db()
-    flag = user_info.get('flag')
-    global multiple_return_times
-    if flag:
-        multiple_return_times += 1
-        # 如果同时有多个已经入库的用户，那么会一直点击用户，然会返回
-        # 这样的操作发生过于频繁会被封锁获取用户的接口
-        if multiple_return_times > 2:
-            log.info('已经连续返回超过3次了，接下来全部滑动作品2次，直到获取新用户为止')
-            hua_by_times(2, tail_to_head_aweme)
-        log.info('用户已经在数据库中存在，返回消息列表')
-        _back_for_times(return_times, **kwargs)
-        # 清理数据
-        clean_dir(base_dir)
-        clean_dir(source_base_dir)
-        return
-    else:
-        multiple_return_times = 0
-
-    # 判断是否有商品橱窗
-    # focus_console()
-    # has_aweme = int(input('>>> 获取 橱窗 1 or 作品 2 or 返回 0：'))
-    has_shop_entry = user_info.get('with_fusion_shop_entry')  # 是否有橱窗
-    if has_shop_entry is None:
-        log.info('获取橱窗失败')
-        focus_console()
-        has_shop_entry = int(input('>>> 获取 橱窗 1 or 作品 2 or 返回 0：'))
-    else:
-        has_shop_entry = True if has_shop_entry in ['true', 'True', 'True', True] else False
-
-    # title栏，如果以下内容存在，橱窗位置会往下移动
-    enterprise_verify_reason = user_info.get('enterprise_verify_reason')  # 官方认证
-    office_info_len = user_info.get('office_info_len')  # 官方信息
-    custom_verify = user_info.get('custom_verify')  # 抖音好物推荐官
-
-    if has_shop_entry:
-        # 点击橱窗
-        # focus_console()
-        aweme_x, aweme_y = aweme_list_button[0], aweme_list_button[1]
-        y_rand = randint(-6, 6)
-        hold_time = .1
-        log.info('点击橱窗，获取商品')
-        # 默认位置
-        if not enterprise_verify_reason and not office_info_len and not custom_verify:
-            m.click(aweme_x, aweme_y + 88 + y_rand, duration=hold_time)
-        if enterprise_verify_reason and not office_info_len:
-            # 如果有企业认证，添加 y值88
-            m.click(aweme_x, aweme_y + 88 + y_rand, duration=hold_time)
-        if office_info_len:
-            m.click(aweme_x, aweme_y + 136 + y_rand, duration=hold_time)
-        if custom_verify:
-            m.click(aweme_x, aweme_y + 63 + y_rand, duration=hold_time)
-        # click_or_not = int(input('>>> 橱窗 调整 1 or 不调整 0 '))
-        # to_x, to_y = m.position()
-        # m.click(to_x, to_y)
-        sleep(time_5)
-
-        # 获取商品总数
-        promotion_count = get_promotion_count(has_shop_entry)
-        if promotion_count is None and has_shop_entry:
-            log.info('获取商品总数失败')
-            focus_console()
-            promotion_count = int(input('>>> 商品总数: '))
-        else:
-            promotion_count = int(promotion_count)
-
-        if promotion_count > 300:
-            log.info('用户商品橱窗数量大于 300，只取前 300 商品')
-            promotion_count = 300
-        if promotion_count > 20:
-            hua(promotion_count, tail_to_head_promotion, step=20)
-        # 返回作品界面
-        back()
-        # sleep(time_3)
-        # 解析文件放在这一步，防止没有获取商品信息而报错
-        _check_convert_file_exits(file_tags='promotion')
-    else:
-        log.info("用户没有橱窗信息")
-
-    # 获取作品信息
-    aweme_count = user_info.get('aweme_count')
-    if aweme_count is None:
-        log.info('没有获取作品数量')
-        m.click(console[0], console[1])
-        aweme_count = int(input('>>> 请输入作品总数：'))
-    else:
-        aweme_count = int(aweme_count)
-
-    if aweme_count:
-        # 作品向上滑动
-        log.info(f'作品数量为 【{aweme_count}】')
-        if not has_shop_entry and aweme_count > 20:
-            log.info(f'因为没有橱窗信息，且作品数量超过20，作品只获取30个')
-            aweme_count = 30
-        _fly_up_to_get_all_aweme(aweme_count, return_times, **kwargs)
-
-        _check_convert_file_exits(file_tags='zuopin')
-        # 存储数据入库
-    else:
-        log.info(f'用户 {user_info["name"]}')
-        for i in range(return_times):
-            back()
-            if i == 0:
-                sleep(time_5)
+    suren_info = SurenInfo(return_times=return_times)
 
 
 def roll_page():
@@ -644,13 +681,13 @@ def fetch_user(flag_num, fetch_method, **kwargs):
         click_avatar()  # 点击头像，进入主页
     else:
         log.info('直接进入主页')
-        m.click(aweme_three[0], aweme_three[1] - 138 + randint(-20, 10))
+        m.click(aweme_three[0], aweme_three[1] - 160 + randint(-20, 10))
         sleep(time_5)
         if kwargs.get('night'):
             # 晚上延迟
-            slow_down_in_key_action()
+            slow_down_in_key_action(duration=time_8)
     # 执行滑动判断逻辑
-    fetch_method(return_times=return_times_third, **kwargs)
+    get_suren_info(return_times=return_times_third, **kwargs)
 
 
 @count_time
@@ -659,7 +696,7 @@ def delete_user_in_message():
     convertX, convertY = 65536 * aweme_three[0] // 3840 + 1, 65536 * aweme_three[1] // 2160 + 1
     ctypes.windll.user32.SetCursorPos(aweme_three[0], aweme_three[1])
     ctypes.windll.user32.mouse_event(2, convertX, convertY, 0, 0)
-    sleep(0.9)
+    sleep(0.95)
     ctypes.windll.user32.mouse_event(4, convertX, convertY, 0, 0)
 
     # m.moveTo(delete_x, delete_y, duration=.1)
@@ -685,7 +722,7 @@ def action(fetch_method, **kwargs):
     start = time.time()
     log.info('=' * 50)
     # 点击第三个视频
-    fetch_user(flag_num, fetch_method, **kwargs)
+    fetch_user(flag_num, get_suren_info, **kwargs)
     # 数据入库
     log.info('存入数据库')
     handle_file(os.listdir(base_dir))
