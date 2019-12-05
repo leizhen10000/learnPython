@@ -420,7 +420,6 @@ OR COUNT(a.aweme_id) = %s
     finally:
         cursor.close()
         conn.close()
-    log.info(user_info)
     return user_info
 
 
@@ -517,17 +516,23 @@ class SurenInfo:
     def __init__(self, return_times, *args, **kwargs):
         self.return_times = return_times
         self._has_shop_entry = None
+        self._user_info = None
 
         log.info('获取素人信息')
 
-        self._user_info = check_user_in_db()
+        self.get_user_check_detail()
         # 判断用户是否已经在数据库中，且包含作品信息
         # 注意：在 check_user_in_db() 方法中，返回的flag=True，
         #   表示用户在数据库中，取反则意味着不是新用户，故逻辑上要加 not
         self._new_user_flag = not self._user_info.get('flag')
         if self.return_depends_on_flag():
             self.more_detail()
-        pass
+            self.user_maidian()
+
+    def get_user_check_detail(self):
+        """获取用户预先检查的详细内容"""
+        self._user_info = check_user_in_db()
+        log.info(self._user_info)
 
     def return_depends_on_flag(self):
         """根据 flag 判断下一步操作
@@ -645,10 +650,7 @@ class SurenInfo:
             _check_convert_file_exits(file_tags='zuopin')
         else:
             log.info(f'用户 {self._user_info["name"]}')
-            for i in range(self.return_times):
-                back()
-                if i == 0:
-                    sleep(time_3)
+            _back_for_times(return_times=1)
 
     def user_maidian(self):
         """用户埋点
@@ -668,12 +670,12 @@ class SurenInfo:
 
         try:
             uid = self._user_info['suren_id']
-            nickname = self._user_info['nickname']
+            name = self._user_info['name']
             flag = not self._user_info['flag']
             # 根据flag插入埋点
-            cursor.execute(maidian_sql, (str(uid), nickname, flag))
+            cursor.execute(maidian_sql, (str(uid), name, flag))
             conn.commit()
-            log.info(f'用户数据埋点，用户 {nickname}, suren_id: {uid}, 是否为新用户: {flag}')
+            log.info(f'用户数据埋点，用户 {name}, suren_id: {uid}, 是否为新用户: {flag}')
         except:
             traceback.print_exc()
             conn.rollback()
