@@ -349,26 +349,29 @@ def check_user_in_db():
             line_json = get_last_line_in_file(file_name, exclude=exclude_users)
             user = line_json.get('user')
             if not user or len(user) < 1:
+                log.info('user 文件最后一行没有用户信息')
+                user_info['has_user'] = False
+                user_info['flag'] = False
                 return user_info
             else:
-                nickname = user.get('nickname', '')
-                uid = user.get('uid')
                 user_info['name'] = user.get('nickname', '')
-                user_info['suren_id'] = uid
+                user_info['suren_id'] = user.get('uid')
                 user_info['with_fusion_shop_entry'] = user.get('with_fusion_shop_entry')
                 user_info['aweme_count'] = user.get('aweme_count')
-                aweme_count = user_info['aweme_count']
                 commerce_info = user.get('commerce_info')
                 user_info['office_info_len'] = len(commerce_info.get('offline_info_list')) \
                     if commerce_info is not None else None
                 user_info['enterprise_verify_reason'] = user.get('enterprise_verify_reason')
                 user_info['custom_verify'] = user.get('custom_verify')  # 抖音标签，如：好物推荐官
-                if int(aweme_count) == 20:
-                    # 由于爬取的问题，有些作品数为20的用户全部有问题
-                    return user_info
-                break
-    else:
-        return user_info
+
+    _pre_check_sql(user_info)
+
+
+def _pre_check_sql(user_info):
+    """文件中获取了用户信息，则查询数据库，返回是否为新用户"""
+    nickname = user_info['name']
+    aweme_count = user_info['aweme_count']
+    uid = user_info['suren_id']
 
     # 查询数据库
     db_pool = get_db_tool()
@@ -386,7 +389,7 @@ OR COUNT(a.aweme_id) = %s
 
     if uid is None:
         log.info('获取用户 uid 为空，推荐使用 nickname 查询')
-        user_sql = """SELECT u.nickname, u.suren_id, COUNT(a.aweme_id) AS a_num 
+        user_sql = """SELECT COUNT(a.aweme_id) AS a_num 
     FROM douyin_aweme AS a
            INNER JOIN douyin_user AS u
                       ON u.suren_id = a.suren_id
@@ -401,19 +404,20 @@ OR COUNT(a.aweme_id) = %s
         if uid is None:
             cursor.execute(user_sql, (nickname, int(aweme_count)))
             result = cursor.fetchall()
-            if result is None or len(result) < 1:
-                log.info(f'用户 {nickname} 在数据库中不存在 or 作品信息不全')
-                user_info['flag'] = False
-            else:
-                log.info(f'\n\t\t用户 {nickname} 有 【{result[0][2]} 作品\n】')
         else:
             cursor.execute(user_sql, (int(uid), int(aweme_count)))
-            result = cursor.fetchone()
-            count = None
-            if result is not None and len(result) > 0:
-                count = result[0]
-                log.info(f'\n\t\t用户 {uid} - {nickname} 有 【{count} 作品】\n')
-            user_info['flag'] = True if count else False
+            result = cursor.fetchall()
+
+        if result is None or len(result) < 1:
+            log.info(f'用户 {nickname} 在数据库中不存在 or 作品信息不全')
+            user_info['flag'] = False
+        else:
+            count = result[0][0]
+            log.info(f'\n\t\t用户 {nickname} 有 【{count} 作品\n】')
+            if count == 20:
+                # 由于爬取的问题，有些作品数为20的用户全部有问题
+                log.info('作品数为20，可能有问题，重新获取一次用户数据')
+                user_info['flag'] = False
     except:
         traceback.print_exc()
         conn.rollback()
@@ -521,10 +525,7 @@ class SurenInfo:
         log.info('获取素人信息')
 
         self.get_user_check_detail()
-        # 判断用户是否已经在数据库中，且包含作品信息
-        # 注意：在 check_user_in_db() 方法中，返回的flag=True，
-        #   表示用户在数据库中，取反则意味着不是新用户，故逻辑上要加 not
-        self._new_user_flag = not self._user_info.get('flag')
+        self._new_user_flag = None
         if self.return_depends_on_flag():
             self.more_detail()
             self.user_maidian()
@@ -533,6 +534,17 @@ class SurenInfo:
         """获取用户预先检查的详细内容"""
         self._user_info = check_user_in_db()
         log.info(self._user_info)
+        # 没有文件获取到用户信息，返回false
+        if self._user_info.get('has_user') is not None:
+            file_has_user = False
+        else:
+            file_has_user = True
+
+        # 数据库是否有该用户
+        db_has_user = self._user_info.get('flag')
+
+        # 是否为新用户：文件有用户信息，且数据库没有该用户
+        self._new_user_flag = file_has_user and (not db_has_user)
 
     def return_depends_on_flag(self):
         """根据 flag 判断下一步操作
@@ -659,8 +671,8 @@ class SurenInfo:
         导致埋点分析不精确
         """
         # 查询数据库
-        db_pool = get_db_tool()
-        conn = db_pool.connection()
+        pool = get_db_tool()
+        conn = pool.connection()
         cursor = conn.cursor()
 
         # 对插入用户埋点，根据用户是否入库统计入库比例
