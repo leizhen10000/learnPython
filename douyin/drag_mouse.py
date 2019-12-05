@@ -271,6 +271,7 @@ def _check_convert_file_exits(times=20, interval=.3, file_tags='all'):
     # log.info(f'获取标签为 {file_tags} 的 【源文件】 {source_files} 时长：{time.time() - cur:.2f}s')
     if not has_source_file or source_files is None:
         err = f'没有获取到标签为 {file_tags} 的 【源文件】，请检查'
+        log.error(err)
         # 不报错，改为查看内容
         # a = input(f'请查看标签为 {file_tags} 的【源文件】是否存在')
         raise FileException(err)
@@ -378,6 +379,9 @@ def check_user_in_db():
     SELECT COUNT(a.aweme_id)
 FROM douyin_aweme a
 WHERE a.suren_id = %s
+GROUP BY a.suren_id 
+HAVING COUNT(a.aweme_id) > 29 
+OR COUNT(a.aweme_id) = %s 
     """
 
     if uid is None:
@@ -388,7 +392,7 @@ WHERE a.suren_id = %s
                       ON u.suren_id = a.suren_id
                         AND u.nickname = %s 
     GROUP BY a.suren_id
-    HAVING COUNT(a.aweme_id) > 21
+    HAVING COUNT(a.aweme_id) > 29
     OR COUNT(a.aweme_id) = %s
     """
 
@@ -407,7 +411,7 @@ VALUES (%s, %s, %s, NOW())
             else:
                 log.info(f'\n\t\t用户 {nickname} 有 【{result[0][2]} 作品\n】')
         else:
-            cursor.execute(user_sql, (int(uid)))
+            cursor.execute(user_sql, (int(uid), int(aweme_count)))
             result = cursor.fetchone()
             count = result[0]
             if count:
@@ -490,6 +494,7 @@ def _fly_up_to_get_all_aweme(aweme_num):
 
 def _back_for_times(return_times, duration=time_3):
     """在判断用户已经入库后，直接根据次数返回"""
+    sleep(time_5)
     for i in range(return_times):
         back()
         sleep(duration)
@@ -553,7 +558,7 @@ class SurenInfo:
             if multiple_return_times > 2:
                 log.info('已经连续返回超过3次了，接下来全部滑动作品2次，直到获取新用户为止')
                 hua_by_times(2, tail_to_head_aweme)
-            log.info('用户已经在数据库中存在，返回消息列表')
+            log.info('返回消息列表')
             _back_for_times(return_times=self.return_times)
             clean_data()
         return has_next
@@ -710,6 +715,7 @@ def delete_user_in_message():
 def _before_action():
     """执行前清理文件，避免造成数据异常、缺失"""
     # 清理数据
+    log.info('执行前有数据，清空数据')
     if os.listdir(base_dir):
         clean_dir(base_dir)
     if os.listdir(source_base_dir):
@@ -737,13 +743,12 @@ def action(**kwargs):
         # 删除小写列表中数据
         delete_user_in_message()
     except FileException as e:
-        log.error(e.error_info)
         if 'promotion' in e.error_info:
             _back_for_times(return_times=1)
             # 返回之后，消息列表需要停滞时间
             sleep(time_5)
         else:
-            input(f'{e.error_info} \n请手动操作')
+            input(f'{e.error_info} \n请手动操作返回消息列表，重新获取用户')
     execute_time = time.time() - start
     if execute_time > 60:
         execute_minute = int(execute_time // 60)
