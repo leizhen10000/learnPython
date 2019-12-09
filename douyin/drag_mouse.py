@@ -33,6 +33,7 @@ import re
 import threading
 import time
 import traceback
+from collections import namedtuple
 from functools import wraps
 from random import random, randrange, sample, choice, randint
 
@@ -73,17 +74,17 @@ tail = x + 762, y + 1630
 aweme_one = x + 200 + randint(1, 5), y + 400
 aweme_two = x + 130 + randint(5, 10), y + 850
 # 分享用户标签时的位置，整个标签都可以点击
-aweme_three = x + 135 + randint(-40, 190), y + 1400
+aweme_three = x + 135, y + 1400
 # aweme_three = x + 322 + randint(-250, 130), y + 1527 + randint(-40, 50)
 right = x + 800 + randrange(0, 50, 3), y + 300 + randrange(0, 1200, 3)
 left = x + 100 + randrange(0, 50, 3), right[1] + randrange(0, 10, 2)
 avatar = x + 976 + randint(-3, 3), y + 987 + randint(-3, 3)
-delete_x, delete_y = x + 483 + randint(-80, 70), y + 1129 + randint(-5, 20)
+delete_x, delete_y = x + 483, y + 1129
 # delete_x, delete_y = x + 483 + randint(-80, 70), y + 1176 + randint(-5, 20)
 
 console = 2589, 2055
 copy_translate = 2358, 2048  # 截图识别文字后，点击复制
-aweme_list_button = x + 70 + randint(-60, 100), y + 520
+aweme_list_button = x + 70, y + 520
 
 time_sample = [0.01, 0.021, 0.031, 0.023]
 time_1 = 0.1 + choice(time_sample)
@@ -102,9 +103,9 @@ time_20 = 2.0 + choice(time_sample)
 
 
 def back():
-    # m.click(x, y)
+    m.click(x, y)
     # 修改为输入esc键，防止误触
-    m.press('esc')
+    # m.press('esc')
 
 
 def sleep(seconds):
@@ -154,7 +155,7 @@ def tail_to_head_aweme():
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(2, 4) / 46.0)
     # sleep(time_1 + time_10 + randint(1, 5) / 16)
-    sleep(time_4 + randint(1, 3) / 30)
+    sleep(time_15 + randint(1, 3) / 30)
 
 
 def tail_to_head_promotion():
@@ -163,7 +164,7 @@ def tail_to_head_promotion():
     m.moveTo(new_x, tail[1] + randint(-300, 100))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, 100),
              duration=randint(1, 3) / 30.0)
-    sleep(time_6 + randint(1, 5) / 30)
+    sleep(time_18 + randint(1, 5) / 30)
 
 
 def hua(exec_count, hua_method, step=9.0):
@@ -224,11 +225,11 @@ def focus_console():
 
 
 def random_read_aweme():
-    m.click(aweme_three[0] + randint(50, 350), aweme_three[1] + randint(-100, 0))
+    new_x, new_y = x + 371 + randint(-330, 250), y + 1150 + randint(-50, 200)
+    m.click(new_x, new_y)
     sleep(time_5)
     m.doubleClick()
-    sleep(time_2)
-    back()
+    _back_for_times(return_times=1, duration_before_back=time_10)
 
 
 # 细节控制
@@ -241,7 +242,7 @@ base_dir = 'D:\\douyin2'
 source_base_dir = 'D:\\douyin'
 
 
-def _check_convert_file_exits(times=15, interval=.2, file_tags='all'):
+def check_convert_file_exits(times=15, interval=.2, file_tags='all'):
     """检验转换的文件/源文件是否存在
 
     :param times: 等待循环次数
@@ -313,7 +314,7 @@ def get_promotion_count(has_shop_entry):
     if not has_shop_entry:
         return 0
 
-    files = _check_convert_file_exits(file_tags='promotion')
+    files = check_convert_file_exits(file_tags='promotion')
 
     if len(files) != 1:
         raise Exception(f"当前有两个商品文件，请检查 {base_dir} 中的内容")
@@ -341,13 +342,21 @@ def check_user_in_db():
     user_info = {'flag': True}
     exclude_users = ['pangpang', 'Alliew', '大王叫我来巡山', '"lp":', '啥名', '已重置']
 
-    files = _check_convert_file_exits(file_tags='user')
+    files = check_convert_file_exits(file_tags='user')
 
     for file in files:
         file_name = os.path.join(base_dir, file)
         if os.path.isfile(file_name) and file.startswith('user'):
             line_json = get_last_line_in_file(file_name, exclude=exclude_users)
             user = line_json.get('user')
+            tab_settings = user.get('tab_settings')
+            if tab_settings:
+                log.info('用户拥有 商家、歌手 等标签')
+                user_info['name'] = user.get('nickname', '')
+                user_info['suren_id'] = user.get('uid')
+                user_info['other_tag'] = True
+                log.info(tab_settings)
+                return user_info
             if not user or len(user) < 1:
                 log.info('user 文件最后一行没有用户信息')
                 user_info['has_user'] = False
@@ -364,7 +373,7 @@ def check_user_in_db():
                 user_info['enterprise_verify_reason'] = user.get('enterprise_verify_reason')
                 user_info['custom_verify'] = user.get('custom_verify')  # 抖音标签，如：好物推荐官
 
-    _pre_check_sql(user_info)
+    return _pre_check_sql(user_info)
 
 
 def _pre_check_sql(user_info):
@@ -408,12 +417,12 @@ OR COUNT(a.aweme_id) = %s
             cursor.execute(user_sql, (int(uid), int(aweme_count)))
             result = cursor.fetchall()
 
-        if result is None or len(result) < 1:
+        if result is None or len(result) == 0:
             log.info(f'用户 {nickname} 在数据库中不存在 or 作品信息不全')
             user_info['flag'] = False
         else:
             count = result[0][0]
-            log.info(f'\n\t\t用户 {nickname} 有 【{count} 作品\n】')
+            log.info(f'\n\t\t用户 {nickname} 有 【{count} 作品】\n')
             if count == 20:
                 # 由于爬取的问题，有些作品数为20的用户全部有问题
                 log.info('作品数为20，可能有问题，重新获取一次用户数据')
@@ -458,7 +467,7 @@ def _fly_up_to_get_all_aweme(aweme_num):
     need_return_wait = False
     if aweme_num > 40:
         # 修改为2， 提高执行效率
-        hua_by_times(3, tail_to_head_aweme)
+        hua_by_times(2, tail_to_head_aweme)
     elif aweme_num > 20:
         hua_by_times(2, tail_to_head_aweme)
     else:
@@ -467,11 +476,10 @@ def _fly_up_to_get_all_aweme(aweme_num):
     # 由于分析文件内容置后，所以这里的等待时间可以去除
     # 如果直接从作品返回需要等待时间
     if need_return_wait:
-        sleep(time_5 + randint(1, 2) / 10.0)
-        back()
-        sleep(time_8 + randint(1, 2) / 10.0)
-    else:
-        back()
+        sleep(time_10)
+    # 软件越来越卡，添加更长的等待返回时间
+    sleep(time_10)
+    _back_for_times(return_times=1)
     # elif return_times == 2:
     #     # 返回两次
     #     back()
@@ -488,11 +496,15 @@ def _fly_up_to_get_all_aweme(aweme_num):
     #     sleep(time_10)
 
 
-def _back_for_times(return_times, duration=time_3):
+def _back_for_times(return_times, duration=time_6, duration_before_back=time_5):
     """在判断用户已经入库后，直接根据次数返回"""
-    sleep(time_5)
+    sleep(duration_before_back)
     for i in range(return_times):
         back()
+        # if i == 0:
+        #     如果是从左滑操作返回
+        # sleep(duration + time_3)
+        # else:
         sleep(duration)
         # focus_console()
         # a = input('当前返回需要确认')
@@ -517,26 +529,28 @@ class FileException(Exception):
 
 
 class SurenInfo:
-    def __init__(self, return_times, *args, **kwargs):
-        self.return_times = return_times
+    def __init__(self, *args, **kwargs):
         self._has_shop_entry = None
         self._user_info = None
+        self._new_user_flag = None
+        self.return_times = kwargs.get('return_times')
 
         log.info('获取素人信息')
 
         self.get_user_check_detail()
-        self._new_user_flag = None
         if self.return_depends_on_flag():
             self.more_detail()
-            self.user_maidian()
+        self.user_maidian()
 
     def get_user_check_detail(self):
         """获取用户预先检查的详细内容"""
+
         self._user_info = check_user_in_db()
         log.info(self._user_info)
         # 没有文件获取到用户信息，返回false
         if self._user_info.get('has_user') is not None:
             file_has_user = False
+            raise Exception('没用 user 文件，请查看')
         else:
             file_has_user = True
 
@@ -562,15 +576,22 @@ class SurenInfo:
             multiple_return_times = 0
             has_next = True
         else:
+            # 是否有商家、歌手标签页
+            other_tag = self._user_info.get('other_tag')
             multiple_return_times += 1
             # 如果同时有多个已经入库的用户，那么会一直点击用户，然会返回
             # 这样的操作发生过于频繁会被封锁获取用户的接口
-            if multiple_return_times > 2:
-                log.info('已经连续返回超过3次了，接下来全部滑动作品2次，直到获取新用户为止')
-                hua_by_times(2, tail_to_head_aweme)
+            # 2. 没有商家歌手标签，才可以点击作品
+            if multiple_return_times > 1 and not other_tag:
+                log.info('已经连续返回超过2次了，接下来随机点击作品，直到获取新用户为止')
+                if int(self._user_info['aweme_count']) > 15:
+                    random_read_aweme()
+                sleep(time_15)
             log.info('从用户首页返回消息列表')
-            sleep(time_5)
-            _back_for_times(return_times=self.return_times)
+            sleep(time_15)
+            back()
+            # _back_for_times(return_times=self.return_times)
+            sleep(time_15)
             clean_data()
         return has_next
 
@@ -601,17 +622,18 @@ class SurenInfo:
         if has_shop_entry:
             # 点击橱窗
             # focus_console()
-            aweme_x, aweme_y = aweme_list_button[0], aweme_list_button[1]
+            aweme_x, aweme_y = aweme_list_button[0] + randint(-60, 100), aweme_list_button[1]
             y_rand = randint(-6, 6)
             hold_time = .1
             log.info('点击橱窗，获取商品')
             # 默认位置
-            if not enterprise_verify_reason and not office_info_len and not custom_verify:
+            if not enterprise_verify_reason and (office_info_len is None or office_info_len <= 1) \
+                    and not custom_verify:
                 m.click(aweme_x, aweme_y + 12 + y_rand, duration=hold_time)
             if enterprise_verify_reason and not office_info_len:
                 # 如果有企业认证，添加 y值88
                 m.click(aweme_x, aweme_y + 88 + y_rand, duration=hold_time)
-            if office_info_len:
+            if enterprise_verify_reason and office_info_len <= 1:
                 m.click(aweme_x, aweme_y + 136 + y_rand, duration=hold_time)
             if custom_verify:
                 m.click(aweme_x, aweme_y + 63 + y_rand, duration=hold_time)
@@ -636,9 +658,9 @@ class SurenInfo:
                 hua(promotion_count, tail_to_head_promotion, step=20)
             # 返回作品界面
             back()
-            # sleep(time_3)
+            sleep(time_3)
             # 解析文件放在这一步，防止没有获取商品信息而报错
-            _check_convert_file_exits(file_tags='promotion')
+            check_convert_file_exits(file_tags='promotion')
         else:
             log.info("用户没有橱窗信息")
 
@@ -659,10 +681,10 @@ class SurenInfo:
                 log.info(f'因为没有橱窗信息，且作品数量超过20，作品只获取30个')
                 aweme_count = 30
             _fly_up_to_get_all_aweme(aweme_count)
-            _check_convert_file_exits(file_tags='zuopin')
+            check_convert_file_exits(file_tags='zuopin')
         else:
             log.info(f'用户 {self._user_info["name"]}')
-            _back_for_times(return_times=1)
+            _back_for_times(return_times=self.return_times)
 
     def user_maidian(self):
         """用户埋点
@@ -676,8 +698,8 @@ class SurenInfo:
         cursor = conn.cursor()
 
         # 对插入用户埋点，根据用户是否入库统计入库比例
-        maidian_sql = """INSERT INTO douyin_maidian (suren_id, nickname, is_new, update_time)
-        VALUES (%s, %s, %s, NOW())
+        maidian_sql = """INSERT INTO douyin_maidian (suren_id, nickname, is_new, update_time, mark)
+        VALUES (%s, %s, %s, NOW(), %s)
             """
 
         try:
@@ -685,9 +707,10 @@ class SurenInfo:
             name = self._user_info['name']
             flag = not self._user_info['flag']
             # 根据flag插入埋点
-            cursor.execute(maidian_sql, (str(uid), name, flag))
+            owner = '啥名'
+            cursor.execute(maidian_sql, (str(uid), name, flag, owner))
             conn.commit()
-            log.info(f'用户数据埋点，用户 {name}, suren_id: {uid}, 是否为新用户: {flag}')
+            log.info(f'用户数据埋点 from {owner}，用户 {name}, suren_id: {uid}, 是否为新用户: {flag}')
         except:
             traceback.print_exc()
             conn.rollback()
@@ -720,6 +743,7 @@ def fetch_user(flag_num, **kwargs):
     chose = randint(1, 10)
     click_title_or_aweme = chose > flag_num
     return_times = 2 if click_title_or_aweme else 1
+    new_x = x + 270  # 因为原来设定的位置总是有莫名其妙的点击问题，在函数内重新设置
     if click_title_or_aweme:
         log.info('点击头像进入视频后，再进入主页')
         m.click(aweme_three[0], aweme_three[1], duration=.2 + random() / 20.0)
@@ -728,27 +752,94 @@ def fetch_user(flag_num, **kwargs):
         click_avatar()  # 点击头像，进入主页
     else:
         log.info('直接进入主页')
-        m.click(aweme_three[0], aweme_three[1] - 160 + randint(-20, 10))
-        sleep(time_5)
+        sleep(time_8)
+        m.click(new_x + randint(-110, 70), aweme_three[1] - 160 + randint(-35, 35))
+        m.click(new_x + randint(-110, 70), aweme_three[1] - 160 + randint(-35, 35))
+        sleep(time_15)
         if kwargs.get('night'):
             # 晚上延迟
-            slow_down_in_key_action(duration=time_8)
+            slow_down_in_key_action(duration=time_20)
     return return_times
 
 
 @count_time
 def delete_user_in_message():
     """删除最下面一个用户信息，前提是已经读取过该用户信息"""
-    convertX, convertY = 65536 * aweme_three[0] // 3840 + 1, 65536 * aweme_three[1] // 2160 + 1
-    ctypes.windll.user32.SetCursorPos(aweme_three[0], aweme_three[1])
+    new_x, new_y = aweme_three[0] + randint(-40, 190), aweme_three[1] + randint(-50, 50)
+    convertX, convertY = 65536 * new_x // 3840 + 1, 65536 * new_y // 2160 + 1
+    ctypes.windll.user32.SetCursorPos(new_x, new_y)
     ctypes.windll.user32.mouse_event(2, convertX, convertY, 0, 0)
-    sleep(0.95)
+    sleep(time_8)
     ctypes.windll.user32.mouse_event(4, convertX, convertY, 0, 0)
 
-    # m.moveTo(delete_x, delete_y, duration=.1)
-    m.click(delete_x, delete_y)
+    m.moveTo(delete_x, delete_y, duration=.1)
+    m.click(delete_x + randint(-14, 70), delete_y + randint(-5, 20))
     log.info('删除消息列表中数据')
     sleep(time_5)
+
+
+class UserListInMessages:
+    """消息中的用户列表"""
+
+    @staticmethod
+    def get_user_file_name():
+        """获取用户列表所在文件"""
+        check_convert_file_exits(file_tags='user')
+        file_names = os.listdir(base_dir)
+        if len(file_names) != 1:
+            raise Exception('当前user文件不止一个，请检查问题')
+        return os.path.join(base_dir, file_names[0])
+
+    @staticmethod
+    def extract_user_from_file(user_file):
+        """从文件中获取用户"""
+        with open(user_file, encoding='utf-8') as f:
+            for line in f:
+                uid_match = re.search(r'"uid":"(\d+)"', line)
+                name_match = re.search(r'"nickname":"(.*?)"', line)
+                if uid_match:
+                    uid = uid_match.group(1)
+                    name = name_match.group(1)
+                    yield uid, name
+
+    @staticmethod
+    def get_user_in_db_by_uid(uid):
+        """根据 uid 获取用户信息"""
+        in_db = False
+        db_pool = get_db_tool()
+        conn = db_pool.connection()
+        cursor = conn.cursor()
+
+        sql = "SELECT nickname FROM douyin_user WHERE suren_id = %s"
+
+        try:
+            cursor.execute(sql, int(uid))
+            data = cursor.fetchall()
+            if data is not None and len(data) > 0:
+                in_db = True
+        except:
+            traceback.print_exc()
+            conn.rollback()
+        finally:
+            cursor.close()
+            conn.close()
+        return in_db
+
+    def generate_query_result(self, user_list):
+        """生成查询的结果"""
+        User = namedtuple('User', 'uid,nickname,in_db')
+        for user in user_list:
+            if user[1] in ['Alliew', 'lp', 'pangpang', '大王叫我来巡山']:
+                continue
+            is_in_db = self.get_user_in_db_by_uid(user[0])
+            user_result = User(user[0], user[1], is_in_db)
+            yield user_result
+
+    def pre_user_list(self):
+        """返回预先的用户列表"""
+        file = self.get_user_file_name()
+        users = self.extract_user_from_file(file)
+        return list(self.generate_query_result(users))
 
 
 def _before_action():
@@ -767,6 +858,19 @@ def action(**kwargs):
 
     start = time.time()
     log.info('=' * 50)
+    return_times = 1
+
+    # 这里预先拖拽了很多消息，获取用户列表
+    # user_list = UserListInMessages().pre_user_list()
+    # user_list.reverse()
+    # user = user_list.pop()
+    # user_in_db = user.in_db
+    # if user_in_db:
+    #     log.info('预先判断该用户已经在数据库中')
+    #     delete_user_in_message()
+    #     sleep(time_5)
+    # else:
+    global error_retry_times
     try:
         _before_action()
         # 点击第三个视频
@@ -782,14 +886,21 @@ def action(**kwargs):
         # 删除小写列表中数据
         delete_user_in_message()
     except FileException as e:
+        error_retry_times += 1
         if 'user' in e.error_info:
             pass
         if 'promotion' in e.error_info:
-            _back_for_times(return_times=1)
+            _back_for_times(return_times=return_times)
             # 返回之后，消息列表需要停滞时间
             sleep(time_5)
         else:
             input(f'{e.error_info} \n请手动操作返回消息列表，重新获取用户')
+
+        if error_retry_times > 1:
+            input('出错次数过多，请检查')
+    else:
+        error_retry_times = 0
+
     execute_time = time.time() - start
     if execute_time > 60:
         execute_minute = int(execute_time // 60)
@@ -803,9 +914,11 @@ def action(**kwargs):
 if __name__ == '__main__':
     user_nums = 0
     roll_times = 0
-    multiple_return_times = 0
+    multiple_return_times = 0  # 判断是否连续多个老用户在消息列表中
     now = datetime.datetime.now()
-    is_night = now.hour > 17 and now.minute > 30
+    is_night = now.hour > 17 and now.minute > 30  # 是否为晚上
+    error_retry_times = 0  # 出错的重试的次数
+    # try:
     while True:
         roll_times += 1
         if roll_times < 251:
@@ -814,6 +927,8 @@ if __name__ == '__main__':
             sleep(time_8)
             user_nums += 1
             print(f'已经获取 {user_nums} 个用户')
+            if roll_times % 15 == 0:
+                sleep(time_20 * 5)
         else:
             focus_console()
             is_continue = int(input('>>> 是否继续：'))
@@ -829,6 +944,8 @@ if __name__ == '__main__':
                 print(f'已经获取 {user_nums} 个用户')
             else:
                 break
+    # except:
+    #     pass
 
     # m.hotkey('alt', 'tab')
     # # draw_cycle()
