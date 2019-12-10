@@ -109,12 +109,13 @@ def insert_into_maidian(users, owner1):
 
     insert_maidian_sql = "INSERT INTO douyin_maidian (suren_id, nickname, is_new, update_time, mark) VALUES (%s, %s, %s, NOW(), %s)"
     try:
+        i = 0
         for item in users:
-            print(item)
+            i += 1
+            print(i, '做参考：', item)
             if item.in_db:
-                print(item.nickname, '入库')
+                print('用户', item.nickname, '入库')
                 result = cursor.execute(insert_maidian_sql, (item.uid, item.nickname, False, owner1))
-                print('执行结果', result)
                 conn.commit()
     except:
         traceback.print_exc()
@@ -128,7 +129,7 @@ if __name__ == '__main__':
     file = get_user_file_name()
     users = extract_user_from_file(file)
     result = generate_query_result(users)
-    insert_into_maidian(result, '啥名')
+    insert_into_maidian(result, 'Alliew')
     print('清空数据')
     # clean_dir('d:\\douyin')
     # clean_dir("d:\\douyin2")

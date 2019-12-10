@@ -586,7 +586,7 @@ class SurenInfo:
                 log.info('已经连续返回超过2次了，接下来随机点击作品，直到获取新用户为止')
                 if int(self._user_info['aweme_count']) > 15:
                     random_read_aweme()
-                sleep(time_15)
+                sleep(time_20)
             log.info('从用户首页返回消息列表')
             sleep(time_15)
             back()
@@ -633,7 +633,7 @@ class SurenInfo:
             if enterprise_verify_reason and not office_info_len:
                 # 如果有企业认证，添加 y值88
                 m.click(aweme_x, aweme_y + 88 + y_rand, duration=hold_time)
-            if enterprise_verify_reason and office_info_len <= 1:
+            if enterprise_verify_reason and office_info_len:
                 m.click(aweme_x, aweme_y + 136 + y_rand, duration=hold_time)
             if custom_verify:
                 m.click(aweme_x, aweme_y + 63 + y_rand, duration=hold_time)
@@ -707,7 +707,7 @@ class SurenInfo:
             name = self._user_info['name']
             flag = not self._user_info['flag']
             # 根据flag插入埋点
-            owner = '啥名'
+            owner = 'Alliew'
             cursor.execute(maidian_sql, (str(uid), name, flag, owner))
             conn.commit()
             log.info(f'用户数据埋点 from {owner}，用户 {name}, suren_id: {uid}, 是否为新用户: {flag}')
