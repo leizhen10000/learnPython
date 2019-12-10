@@ -64,6 +64,7 @@ keys = [12, 'name', list('abc')]
 print(*keys, sep=',')
 
 print('\n')
+print('=' * 20)
 print('读取字节数据')
 print('读取文本为一行，使用 rb 模式')
 with open('a.info', 'rb') as f:

@@ -26,7 +26,7 @@
 import os
 import re
 import traceback
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 from douyin.conver_encoding import convert_file, clean_dir
 from douyin.drag_mouse import check_convert_file_exits
@@ -85,11 +85,20 @@ def get_user_in_db_by_uid(uid):
 def generate_query_result(user_list):
     """生成查询的结果"""
     User = namedtuple('User', 'uid,nickname,in_db')
+    uid_times = defaultdict(int)
     for user in user_list:
         if user[1] in ['Alliew', 'lp', 'pangpang', '大王叫我来巡山', '啥名']:
             continue
-        is_in_db = get_user_in_db_by_uid(user[0])
-        user_result = User(user[0], user[1], is_in_db)
+        uid = user[0]
+        nickname = user[1]
+        # 判断 uid 在 list 中出现的次数
+        uid_times[uid] += 1
+        if uid_times[uid] == 1:
+            is_in_db = get_user_in_db_by_uid(user[0])
+            user_result = User(uid, nickname, is_in_db)
+        else:
+            print(f'>>> 用户{user[1]}在本列表中出现过')
+            user_result = User(uid, nickname, True)
         yield user_result
 
 
@@ -129,7 +138,7 @@ if __name__ == '__main__':
     file = get_user_file_name()
     users = extract_user_from_file(file)
     result = generate_query_result(users)
-    insert_into_maidian(result, 'Alliew')
+    insert_into_maidian(result, '啥名')
     print('清空数据')
-    # clean_dir('d:\\douyin')
-    # clean_dir("d:\\douyin2")
+    clean_dir('d:\\douyin')
+    clean_dir("d:\\douyin2")

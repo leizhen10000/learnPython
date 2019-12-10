@@ -95,6 +95,7 @@ time_5 = 0.5 + choice(time_sample)
 time_6 = 0.6 + choice(time_sample)
 time_7 = 0.7 + choice(time_sample)
 time_8 = 0.8 + choice(time_sample)
+time_9 = 0.9 + choice(time_sample)
 time_10 = 1.0 + choice(time_sample)
 time_13 = 1.3 + choice(time_sample)
 time_15 = 1.5 + choice(time_sample)
@@ -225,6 +226,7 @@ def focus_console():
 
 
 def random_read_aweme():
+    log.info('随机点击作品')
     new_x, new_y = x + 371 + randint(-330, 250), y + 1150 + randint(-50, 200)
     m.click(new_x, new_y)
     sleep(time_5)
@@ -591,7 +593,7 @@ class SurenInfo:
             sleep(time_15)
             back()
             # _back_for_times(return_times=self.return_times)
-            sleep(time_15)
+            sleep(time_18)
             clean_data()
         return has_next
 
@@ -707,7 +709,7 @@ class SurenInfo:
             name = self._user_info['name']
             flag = not self._user_info['flag']
             # 根据flag插入埋点
-            owner = 'Alliew'
+            owner = '啥名'
             cursor.execute(maidian_sql, (str(uid), name, flag, owner))
             conn.commit()
             log.info(f'用户数据埋点 from {owner}，用户 {name}, suren_id: {uid}, 是否为新用户: {flag}')
@@ -769,13 +771,13 @@ def delete_user_in_message():
     convertX, convertY = 65536 * new_x // 3840 + 1, 65536 * new_y // 2160 + 1
     ctypes.windll.user32.SetCursorPos(new_x, new_y)
     ctypes.windll.user32.mouse_event(2, convertX, convertY, 0, 0)
-    sleep(time_8)
+    sleep(time_10)
     ctypes.windll.user32.mouse_event(4, convertX, convertY, 0, 0)
 
     m.moveTo(delete_x, delete_y, duration=.1)
     m.click(delete_x + randint(-14, 70), delete_y + randint(-5, 20))
     log.info('删除消息列表中数据')
-    sleep(time_5)
+    sleep(time_1)
 
 
 class UserListInMessages:
