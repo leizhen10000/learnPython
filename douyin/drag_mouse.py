@@ -352,7 +352,8 @@ def check_user_in_db():
             line_json = get_last_line_in_file(file_name, exclude=exclude_users)
             user = line_json.get('user')
             tab_settings = user.get('tab_settings')
-            if tab_settings:
+            original_musician = user.get('original_musician')
+            if tab_settings or original_musician:
                 log.info('用户拥有 商家、歌手 等标签')
                 user_info['name'] = user.get('nickname', '')
                 user_info['suren_id'] = user.get('uid')
@@ -591,21 +592,18 @@ class SurenInfo:
                 sleep(time_20)
             log.info('从用户首页返回消息列表')
             # 晚上要加时间，这里直接收到加5
-            if is_night:
-                sleep(time_15 + time_5)
-            else:
-                sleep(time_15)
+            # if is_night:
+            #     sleep( time_5)
+            sleep(time_15)
             back()
             # _back_for_times(return_times=self.return_times)
-            sleep(time_10)
+            sleep(time_15)
             clean_data()
         return has_next
 
     def more_detail(self):
         """获取更多的内容，如橱窗、作品"""
         self.promotion_info()
-        if is_night:
-            sleep(time_5)
         self.aweme_info()
 
     def promotion_info(self):
@@ -766,7 +764,7 @@ def fetch_user(flag_num, **kwargs):
         sleep(time_18)
         if kwargs.get('night'):
             # 晚上延迟
-            slow_down_in_key_action(duration=time_20)
+            slow_down_in_key_action(duration=time_5)
     return return_times
 
 
