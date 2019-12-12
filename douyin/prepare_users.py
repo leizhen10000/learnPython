@@ -87,7 +87,7 @@ def generate_query_result(user_list):
     User = namedtuple('User', 'uid,nickname,in_db')
     uid_times = defaultdict(int)
     for user in user_list:
-        if user[1] in ['Alliew', 'lp', 'pangpang', '大王叫我来巡山', '啥名']:
+        if user[1] in ['Alliew', 'lp', 'pangpang', '大王叫我来巡山', '啥名', '捕梦']:
             continue
         uid = user[0]
         nickname = user[1]
@@ -123,7 +123,8 @@ def insert_into_maidian(users, owner1):
             i += 1
             print(i, '做参考：', item)
             if item.in_db:
-                print('用户', item.nickname, '入库')
+                print('用户【', item.nickname, '】入库')
+                # for i in range(10):
                 result = cursor.execute(insert_maidian_sql, (item.uid, item.nickname, False, owner1))
                 conn.commit()
     except:
@@ -138,7 +139,7 @@ if __name__ == '__main__':
     file = get_user_file_name()
     users = extract_user_from_file(file)
     result = generate_query_result(users)
-    insert_into_maidian(result, '啥名')
+    insert_into_maidian(result, '')
     print('清空数据')
     clean_dir('d:\\douyin')
     clean_dir("d:\\douyin2")

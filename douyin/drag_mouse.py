@@ -156,7 +156,7 @@ def tail_to_head_aweme():
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
              duration=randint(2, 4) / 46.0)
     # sleep(time_1 + time_10 + randint(1, 5) / 16)
-    sleep(time_15 + randint(1, 3) / 30)
+    sleep(time_10 + randint(1, 3) / 30)
 
 
 def tail_to_head_promotion():
@@ -165,7 +165,7 @@ def tail_to_head_promotion():
     m.moveTo(new_x, tail[1] + randint(-300, 100))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, 100),
              duration=randint(1, 3) / 30.0)
-    sleep(time_18 + randint(1, 5) / 30)
+    sleep(time_7 + randint(1, 5) / 30)
 
 
 def hua(exec_count, hua_method, step=9.0):
@@ -480,7 +480,7 @@ def _fly_up_to_get_all_aweme(aweme_num):
     if need_return_wait:
         sleep(time_10)
     # 软件越来越卡，添加更长的等待返回时间
-    sleep(time_10)
+    # sleep(time_10)
     _back_for_times(return_times=1)
     # elif return_times == 2:
     #     # 返回两次
@@ -590,16 +590,22 @@ class SurenInfo:
                     random_read_aweme()
                 sleep(time_20)
             log.info('从用户首页返回消息列表')
-            sleep(time_15)
+            # 晚上要加时间，这里直接收到加5
+            if is_night:
+                sleep(time_15 + time_5)
+            else:
+                sleep(time_15)
             back()
             # _back_for_times(return_times=self.return_times)
-            sleep(time_18)
+            sleep(time_10)
             clean_data()
         return has_next
 
     def more_detail(self):
         """获取更多的内容，如橱窗、作品"""
         self.promotion_info()
+        if is_night:
+            sleep(time_5)
         self.aweme_info()
 
     def promotion_info(self):
@@ -754,10 +760,10 @@ def fetch_user(flag_num, **kwargs):
         click_avatar()  # 点击头像，进入主页
     else:
         log.info('直接进入主页')
-        sleep(time_8)
+        sleep(time_5)
         m.click(new_x + randint(-110, 70), aweme_three[1] - 160 + randint(-35, 35))
         m.click(new_x + randint(-110, 70), aweme_three[1] - 160 + randint(-35, 35))
-        sleep(time_15)
+        sleep(time_18)
         if kwargs.get('night'):
             # 晚上延迟
             slow_down_in_key_action(duration=time_20)
@@ -831,7 +837,7 @@ class UserListInMessages:
         """生成查询的结果"""
         User = namedtuple('User', 'uid,nickname,in_db')
         for user in user_list:
-            if user[1] in ['Alliew', 'lp', 'pangpang', '大王叫我来巡山']:
+            if user[1] in ['Alliew', 'lp', 'pangpang', '大王叫我来巡山', '捕梦', '啥名']:
                 continue
             is_in_db = self.get_user_in_db_by_uid(user[0])
             user_result = User(user[0], user[1], is_in_db)
@@ -923,10 +929,10 @@ if __name__ == '__main__':
     # try:
     while True:
         roll_times += 1
-        if roll_times < 251:
+        if roll_times < 301:
             # get_suren_info(1)
             action(night=is_night)  # 执行步骤二，已经融合了执行步骤一 @2109-11-22
-            sleep(time_8)
+            sleep(time_3)
             user_nums += 1
             print(f'已经获取 {user_nums} 个用户')
             if roll_times % 15 == 0:
