@@ -142,11 +142,11 @@ def fly_right():
     m.dragTo(right[0] + 300, right[1], duration=time_1)
 
 
-def head_to_tail():
+def head_to_tail(duration=time_5):
     """向下滑动，从上到下"""
-    new_x = head[0] + randint(-400, 100)
-    m.moveTo(new_x, head[1])
-    m.dragTo(new_x, tail[1], duration=time_5)
+    new_x = head[0] + randint(50, 100)
+    m.moveTo(new_x, head[1] + 1200)
+    m.dragTo(new_x, tail[1], duration=duration)
 
 
 def tail_to_head_aweme():
@@ -154,9 +154,9 @@ def tail_to_head_aweme():
     new_x = head[0] + randint(-400, 100)
     m.moveTo(new_x, tail[1] + randint(-300, 20))
     m.dragTo(new_x + randint(30, 50), head[1] + randint(-100, -80),
-             duration=randint(2, 4) / 46.0)
+             duration=randint(2, 4) / 56.0)
     # sleep(time_1 + time_10 + randint(1, 5) / 16)
-    sleep(time_10 + randint(1, 3) / 30)
+    sleep(time_3 + randint(1, 3) / 30)
 
 
 def tail_to_head_promotion():
@@ -227,6 +227,7 @@ def focus_console():
 
 def random_read_aweme():
     log.info('随机点击作品')
+    sleep(time_5)
     new_x, new_y = x + 371 + randint(-330, 250), y + 1150 + randint(-50, 200)
     m.click(new_x, new_y)
     sleep(time_5)
@@ -352,8 +353,9 @@ def check_user_in_db():
             line_json = get_last_line_in_file(file_name, exclude=exclude_users)
             user = line_json.get('user')
             tab_settings = user.get('tab_settings')
-            original_musician = user.get('original_musician')
-            if tab_settings or original_musician:
+            music_count = user['original_musician']['music_count']
+
+            if tab_settings or music_count:
                 log.info('用户拥有 商家、歌手 等标签')
                 user_info['name'] = user.get('nickname', '')
                 user_info['suren_id'] = user.get('uid')
@@ -375,11 +377,12 @@ def check_user_in_db():
                     if commerce_info is not None else None
                 user_info['enterprise_verify_reason'] = user.get('enterprise_verify_reason')
                 user_info['custom_verify'] = user.get('custom_verify')  # 抖音标签，如：好物推荐官
+                user_info['follower_count'] = user.get('follower_count')
 
-    return _pre_check_sql(user_info)
+    return pre_check_sql(user_info)
 
 
-def _pre_check_sql(user_info):
+def pre_check_sql(user_info):
     """文件中获取了用户信息，则查询数据库，返回是否为新用户"""
     nickname = user_info['name']
     aweme_count = user_info['aweme_count']
@@ -421,11 +424,12 @@ OR COUNT(a.aweme_id) = %s
             result = cursor.fetchall()
 
         if result is None or len(result) == 0:
-            log.info(f'用户 {nickname} 在数据库中不存在 or 作品信息不全')
+            # todo: 暂时把 log 拿掉
+            # log.info(f'用户 {nickname} 在数据库中不存在 or 作品信息不全')
             user_info['flag'] = False
         else:
             count = result[0][0]
-            log.info(f'\n\t\t用户 {nickname} 有 【{count} 作品】\n')
+            # log.info(f'\n\t\t用户 {nickname} 有 【{count} 作品】\n')
             if count == 20:
                 # 由于爬取的问题，有些作品数为20的用户全部有问题
                 log.info('作品数为20，可能有问题，重新获取一次用户数据')
@@ -469,20 +473,22 @@ def _fly_up_to_get_all_aweme(aweme_num):
     """
     need_return_wait = False
     if aweme_num > 40:
-        # 修改为2， 提高执行效率
-        hua_by_times(2, tail_to_head_aweme)
+        # 修改为1， 提高执行效率
+        hua_by_times(1, tail_to_head_aweme)
     elif aweme_num > 20:
-        hua_by_times(2, tail_to_head_aweme)
+        hua_by_times(1, tail_to_head_aweme)
     else:
         log.info('作品数量小于20')
         need_return_wait = True
     # 由于分析文件内容置后，所以这里的等待时间可以去除
     # 如果直接从作品返回需要等待时间
     if need_return_wait:
-        sleep(time_10)
+        _back_for_times(return_times=1, duration_before_back=time_15, duration=time_15)
+    else:
+        _back_for_times(return_times=1, duration=time_10)
+
     # 软件越来越卡，添加更长的等待返回时间
     # sleep(time_10)
-    _back_for_times(return_times=1)
     # elif return_times == 2:
     #     # 返回两次
     #     back()
@@ -574,10 +580,19 @@ class SurenInfo:
                           False：意味着需要直接返回，该操作在内容中有实现
         """
         has_next = False
+        less_min_followed = False
+        # 判断粉丝数量
+        follower_count = self._user_info.get('follower_count')
+        MIN_FOLLOWED = 20000
+        if follower_count is not None and int(follower_count) < MIN_FOLLOWED:
+            less_min_followed = True
+            log.info(f'用户 {self._user_info.get("name")} 粉丝数为 {follower_count}')
+
         global multiple_return_times
         if self._new_user_flag:
             multiple_return_times = 0
-            has_next = True
+            if not less_min_followed:
+                has_next = True
         else:
             # 是否有商家、歌手标签页
             other_tag = self._user_info.get('other_tag')
@@ -585,11 +600,13 @@ class SurenInfo:
             # 如果同时有多个已经入库的用户，那么会一直点击用户，然会返回
             # 这样的操作发生过于频繁会被封锁获取用户的接口
             # 2. 没有商家歌手标签，才可以点击作品
-            if multiple_return_times > 1 and not other_tag:
+            # 3. 没有少于（大于）2w的粉丝，才可以点击作品
+            if multiple_return_times > 1 and not other_tag and not less_min_followed:
                 log.info('已经连续返回超过2次了，接下来随机点击作品，直到获取新用户为止')
                 if int(self._user_info['aweme_count']) > 15:
                     random_read_aweme()
-                sleep(time_20)
+                sleep(time_15)
+
             log.info('从用户首页返回消息列表')
             # 晚上要加时间，这里直接收到加5
             # if is_night:
@@ -597,7 +614,7 @@ class SurenInfo:
             sleep(time_15)
             back()
             # _back_for_times(return_times=self.return_times)
-            sleep(time_15)
+            sleep(time_18)
             clean_data()
         return has_next
 
@@ -657,9 +674,9 @@ class SurenInfo:
             else:
                 promotion_count = int(promotion_count)
 
-            if promotion_count > 300:
-                log.info('用户商品橱窗数量大于 300，只取前 300 商品')
-                promotion_count = 300
+            if promotion_count > 100:
+                log.info('用户商品橱窗数量大于 100，只取前 100 商品')
+                promotion_count = 100
             if promotion_count > 20:
                 hua(promotion_count, tail_to_head_promotion, step=20)
             # 返回作品界面
@@ -713,7 +730,7 @@ class SurenInfo:
             name = self._user_info['name']
             flag = not self._user_info['flag']
             # 根据flag插入埋点
-            owner = '啥名'
+            owner = 'Alliew'
             cursor.execute(maidian_sql, (str(uid), name, flag, owner))
             conn.commit()
             log.info(f'用户数据埋点 from {owner}，用户 {name}, suren_id: {uid}, 是否为新用户: {flag}')
@@ -758,7 +775,7 @@ def fetch_user(flag_num, **kwargs):
         click_avatar()  # 点击头像，进入主页
     else:
         log.info('直接进入主页')
-        sleep(time_5)
+        sleep(time_10)
         m.click(new_x + randint(-110, 70), aweme_three[1] - 160 + randint(-35, 35))
         m.click(new_x + randint(-110, 70), aweme_three[1] - 160 + randint(-35, 35))
         sleep(time_18)
@@ -835,7 +852,8 @@ class UserListInMessages:
         """生成查询的结果"""
         User = namedtuple('User', 'uid,nickname,in_db')
         for user in user_list:
-            if user[1] in ['Alliew', 'lp', 'pangpang', '大王叫我来巡山', '捕梦', '啥名']:
+            if user[1] in ['Alliew', 'lp', 'pangpang', '大王叫我来巡山', '捕梦', '啥名',
+                           '追梦无悔', '奥力给', '大成']:
                 continue
             is_in_db = self.get_user_in_db_by_uid(user[0])
             user_result = User(user[0], user[1], is_in_db)
@@ -881,6 +899,11 @@ def action(**kwargs):
         _before_action()
         # 点击第三个视频
         return_times = fetch_user(flag_num, **kwargs)
+        # focus_console()
+        # a = input('等待点击下一个用户')
+        # cur_x, cur_y = m.position()
+        # m.click(cur_x, cur_y)
+        # sleep(time_7)
         # 执行滑动判断逻辑
         get_suren_info(return_times=return_times, callback=action)
         # 数据入库
@@ -895,6 +918,10 @@ def action(**kwargs):
         error_retry_times += 1
         if 'user' in e.error_info:
             pass
+            # for i in range(5):
+            # head_to_tail(duration=time_1)
+            # sleep(time_10)
+            # tail_to_head_aweme()
         if 'promotion' in e.error_info:
             _back_for_times(return_times=return_times)
             # 返回之后，消息列表需要停滞时间
@@ -917,13 +944,18 @@ def action(**kwargs):
     log.info('=' * 50 + '\n')
 
 
-if __name__ == '__main__':
+def douyin_run():
     user_nums = 0
     roll_times = 0
+    global multiple_return_times
     multiple_return_times = 0  # 判断是否连续多个老用户在消息列表中
     now = datetime.datetime.now()
     is_night = now.hour > 17 and now.minute > 30  # 是否为晚上
+    global error_retry_times
     error_retry_times = 0  # 出错的重试的次数
+
+    action(night=is_night)
+    sleep(time_3)
     # try:
     while True:
         roll_times += 1
@@ -950,6 +982,10 @@ if __name__ == '__main__':
                 print(f'已经获取 {user_nums} 个用户')
             else:
                 break
+
+
+if __name__ == '__main__':
+    douyin_run()
     # except:
     #     pass
 
