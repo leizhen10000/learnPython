@@ -25,9 +25,11 @@
 """
 import ctypes
 import json
+
 import os
 import random
 import time
+from math import ceil
 
 import pyautogui
 
@@ -38,12 +40,20 @@ from douyin.drag_mouse import check_user_in_db, hua, head_to_tail, back, focus_c
 class Following:
 
     def __init__(self):
-        self.following_num = None
+        self.following_num = 0
+        self.useful_user_num = 0
         following_users = self.get_following_users()
-        self.hit_user_indexes = list(self.parse_following_users(following_users))
+        # 先获取默认的关注用户20个，取得关注总数
+        list(self.parse_following_users(following_users))
+        self.down_and_up()
+        # 重新获取需要的更多关注用户
+        self.hit_user_indexes = list(self.parse_following_users(self.get_following_users()))
         print(self.hit_user_indexes)
         print(self.following_num)
-        self.click_user_in_following_esc()
+        self.usage_ratio = self.useful_user_num / float(self.following_num)
+        print(self.usage_ratio)
+        if self.usage_ratio > .002:
+            self.click_user_in_following_esc()
 
     def get_following_users(self):
         """获取 关注列表"""
@@ -66,11 +76,40 @@ class Following:
                     if following_users:
                         yield from following_users
 
+    def down_and_up(self):
+        # 先上下滑动获取关注用户，200为界
+        if self.following_num < 200:
+            true_num = self.following_num
+        else:
+            print('关注量大于200，取前250')
+            true_num = 250  # 真实获取用户量
+        x, y = 791, 155
+        head = x + 762, y + 81
+        tail = x + 762, y + 1630
+
+        down_times = ceil(true_num / 100)
+        up_times = ceil(true_num / 20)
+
+        # 上划
+        for i in range(up_times):
+            new_x = head[0] + random.randint(-400, 100)
+            pyautogui.moveTo(new_x, tail[1] + random.randint(-300, 20))
+            pyautogui.dragTo(new_x + random.randint(30, 50), head[1] + random.randint(-100, -80),
+                             duration=random.randint(2, 4) / 56.0)
+            time.sleep(.3)
+
+        # 下滑
+        for i in range(down_times):
+            new_x = head[0] + random.randint(50, 100)
+            pyautogui.moveTo(new_x, head[1] + 1200)
+            pyautogui.dragTo(new_x, tail[1], duration=.1)
+            time.sleep(1)
+
     def parse_following_users(self, following_users):
         """解析用户"""
+        line = 0
         num = 0
         for user in following_users:
-            num += 1
             uid = user.get('uid')
             nickname = user.get('nickname')
             has_promotion = user.get('with_fusion_shop_entry')
@@ -78,12 +117,23 @@ class Following:
             short_id = user.get('short_id', '')  # 抖音号2
             if not unique_id:
                 unique_id = short_id
-            if has_promotion:
+            enterprise_verify_reason = user.get('enterprise_verify_reason')  # 官方认证，蓝V
+            if enterprise_verify_reason != '':
+                # num += 1
+                line += 1
+                continue
+            enterprise_verify_reason = user.get('enterprise_verify_reason')  # 官方认证，蓝V
+            if has_promotion and nickname != '已重置':
                 user_info = {'name': nickname, 'aweme_count': 20, 'suren_id': uid}
                 user_info = pre_check_sql(user_info)
                 if user_info.get('flag') is False:
-                    print('line', num, '用户', '名称【', nickname, '】', unique_id, '拥有橱窗')
-                    yield num
+                    num += 1
+                    print('N', num, 'l', line, '用户', '【', nickname, '】', unique_id, '拥有橱窗')
+                    if line % 10 == 0:
+                        print('第十个分割线', '=' * 30)
+                    yield line
+            line += 1
+            self.useful_user_num = num
 
     def click_user_in_following(self):
         """点击关注中指定的用户
@@ -136,11 +186,10 @@ class Following:
     def click_user_in_following_esc(self):
         """上面一个倒着来的方法太蠢了，还是正着获取内容"""
         max_user = self.following_num
-        hit_users = self.hit_user_indexes
 
         x_space_up = 1247 + random.randint(-100, 200)
         y_up = 287
-        y_height = 172  # 每个用户拖拽移动的高度
+        y_height = 188.2  # 每个用户拖拽移动的高度，不同电脑里面可能不同
         y_real_height = 150  # 每个用户的真实高度
         y_step = 9
         cur_page = 0  # 定位当前页
@@ -152,14 +201,34 @@ class Following:
             # 相对于当前的页面，需要多翻页多少，选取多少
             page_steps, move_steps = divmod(user_num - cur_page * 10, 10)
             for i in range(page_steps):
-                pyautogui.moveTo(x_space_up, y_up + y_step * y_height)
-                pyautogui.drag(xOffset=random.randint(-10, 10), yOffset=-y_step * y_height, duration=3)
+                pyautogui.moveTo(x_space_up, y_up + (y_step - 1) * y_height)
+                if i == 0:
+                    pyautogui.drag(xOffset=0, yOffset=-y_step * y_height - 10,
+                                   duration=1.01, tween=pyautogui.easeOutQuad)
+                else:
+                    pyautogui.drag(xOffset=0, yOffset=-y_step * y_height, duration=1.01, tween=pyautogui.easeOutQuad)
+                pyautogui.moveTo(x_space_up, y_up + y_height)
+                # pyautogui.scroll(clicks=11, x=x_space_up, y=y_up + y_height)
+                time.sleep(.1)
             cur_page += page_steps
             if cur_page + 1 == max_page:
                 break
-            pyautogui.moveTo(x=x_space_up, y=y_up + y_real_height * move_steps - 1)
-            douyin_run()
+            pyautogui.moveTo(x=x_space_up, y=y_up + y_real_height * move_steps)
+            suren_info = douyin_run()
+            # missing_position = 0
+            # if suren_info.get('has_next_action') is False:
+            #     missing_position += 1
+            # else:
+            #     missing_position = 0
+            # if missing_position > 2:
+            #     raise Exception('用户偏移出错，请检查')
+            time.sleep(.3)
 
+
+def click_fans():
+    """点击粉丝"""
+
+    pass
 
 if __name__ == '__main__':
     follow = Following()
