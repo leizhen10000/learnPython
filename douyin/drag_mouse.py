@@ -400,15 +400,15 @@ def pre_check_sql(user_info):
     FROM douyin_user u
     WHERE u.suren_id = %s
         """
-#
-#     user_sql = """
-#     SELECT COUNT(a.aweme_id)
-# FROM douyin_aweme2 a
-# WHERE a.suren_id = %s
-# GROUP BY a.suren_id
-# HAVING COUNT(a.aweme_id) > 0
-# OR COUNT(a.aweme_id) = %s
-#     """
+    #
+    #     user_sql = """
+    #     SELECT COUNT(a.aweme_id)
+    # FROM douyin_aweme2 a
+    # WHERE a.suren_id = %s
+    # GROUP BY a.suren_id
+    # HAVING COUNT(a.aweme_id) > 0
+    # OR COUNT(a.aweme_id) = %s
+    #     """
     # OR COUNT(a.aweme_id) = 20
     # OR COUNT(a.aweme_id) = 21
     # 原来 > 29 用于其他判断，如果不是获取关注的用户详情，需要该回去
@@ -700,9 +700,9 @@ class SurenInfo:
                 else:
                     promotion_count = int(promotion_count)
 
-                if promotion_count > 300:
-                    log.info('用户商品橱窗数量大于 300，只取前 300 商品')
-                    promotion_count = 300
+                if promotion_count > 100:
+                    log.info('用户商品橱窗数量大于 100，只取前 100 商品')
+                    promotion_count = 100  # @2020-02-24 修改，减少次数 300 -> 100
                 if promotion_count > 20:
                     hua(promotion_count, tail_to_head_promotion, step=20)
                     sleep(time_5)
@@ -730,7 +730,9 @@ class SurenInfo:
             if not self._has_shop_entry and aweme_count > 20:
                 log.info(f'因为没有橱窗信息，且作品数量超过20，作品只获取30个')
                 aweme_count = 30
-            _fly_up_to_get_all_aweme(aweme_count)
+            # _fly_up_to_get_all_aweme(aweme_count) # @2020-2-24 减少时间，不滑动了
+            # 返回需要在这里添加
+            back()
             check_convert_file_exits(file_tags='zuopin')
         else:
             log.info(f'用户 {self._user_info["name"]}')
@@ -960,11 +962,14 @@ def action(**kwargs):
             _back_for_times(return_times=return_times)
             # 返回之后，消息列表需要停滞时间
             sleep(time_5)
-        else:
-            input(f'{e.error_info} \n请手动操作返回消息列表，重新获取用户')
+        # else:
+        #     input(f'{e.error_info} \n请手动操作返回消息列表，重新获取用户')
 
         if error_retry_times > 1:
             input('出错次数过多，请检查')
+
+        back()
+        sleep(time_3)
     else:
         error_retry_times = 0
 

@@ -81,13 +81,13 @@ class Following:
         if self.following_num < 200:
             true_num = self.following_num
         else:
-            print('关注量大于200，取前250')
-            true_num = 250  # 真实获取用户量
+            print('关注量大于200，取前300')
+            true_num = 300  # 真实获取用户量
         x, y = 791, 155
         head = x + 762, y + 81
         tail = x + 762, y + 1630
 
-        down_times = ceil(true_num / 100)
+        down_times = ceil(true_num / 80)
         up_times = ceil(true_num / 20)
 
         # 上划
@@ -189,7 +189,7 @@ class Following:
 
         x_space_up = 1247 + random.randint(-100, 200)
         y_up = 287
-        y_height = 188.2  # 每个用户拖拽移动的高度，不同电脑里面可能不同
+        y_height = 188.17  # 每个用户拖拽移动的高度，不同电脑里面可能不同
         y_real_height = 150  # 每个用户的真实高度
         y_step = 9
         cur_page = 0  # 定位当前页

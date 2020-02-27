@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding" addBOMForNewFiles="with NO BOM">
+    <file url="file://$USER_HOME$/Desktop/user.csv" charset="GBK" />
+    <file url="file://$USER_HOME$/Desktop/user_2019_12_24.csv" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/python_cookbook/chapter6_data_encode_and_process/a.csv" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/python_cookbook/chapter6_data_encode_and_process/b.csv" charset="GBK" />
+  </component>
+</project>

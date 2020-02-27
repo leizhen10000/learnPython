@@ -229,7 +229,7 @@ def handle_file(files):
                     # promotion_insert_args = [list(item.values()).insert(1, user_id) for item in new_promotion_infos]
                     logger.info(f'新增的商品:{[item[0] for item in promotion_insert_args]}')
                     # 批量插入数据
-                    promotion_insert_sql = """REPLACE INTO douyin_promotion
+                    promotion_insert_sql = """REPLACE INTO douyin_promotion2
         (promotion_id, suren_id, title, sales, visitor_count, price, goods_source, 
         coupon_real_price, elastic_title, elastic_type,
          aweme_id, coupon_link, detail_url, count, update_time)
