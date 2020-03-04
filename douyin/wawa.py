@@ -189,7 +189,7 @@ class Following:
 
         x_space_up = 1247 + random.randint(-100, 200)
         y_up = 287
-        y_height = 188.17  # 每个用户拖拽移动的高度，不同电脑里面可能不同
+        y_height = 187.79  # 每个用户拖拽移动的高度，不同电脑里面可能不同
         y_real_height = 150  # 每个用户的真实高度
         y_step = 9
         cur_page = 0  # 定位当前页
