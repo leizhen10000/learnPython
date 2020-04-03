@@ -156,3 +156,36 @@ class C(B):
 c = C()
 print('但下划线的内容，会被子类覆盖；\n'
       '而双下划线的内容是一个新内容 B.__private_method  和 C.__private_method ')
+
+print('\n'
+      '定义属性，访问与修改')
+
+
+class Person:
+    def __init__(self, first_name):
+        self.first_name = first_name
+
+    @property
+    def first_name(self):
+        return self._first_name
+
+    @first_name.setter
+    def first_name(self, value):
+        if not isinstance(value, str):
+            raise TypeError('需要一个 string')
+        self._first_name = value
+
+    @first_name.deleter
+    def first_name(self):
+        raise AttributeError("不能删除属性")
+
+
+p = Person('montou')
+print(p.first_name)
+try:
+    p.first_name = 'a'
+    del p.first_name
+except Exception as e:
+    print(e)
+print(Person.first_name.fget)
+print(Person.first_name.fset)
