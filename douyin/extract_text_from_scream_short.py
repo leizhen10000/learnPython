@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 """
-# @Time    : 2018/4/8 14:04
+# @Time    : 19/11/11 14:05
 # @Author  : Lei Zhen
 # @Contract: leizhen8080@gmail.com
-# @File    : using_thread.py
+# @Site    : http://www.leizhen.com
+# @File    : extract_text_from_scream_short.py
 # @Software: PyCharm
 # code is far away from bugs with the god animal protecting
     I love animals. They taste delicious.
@@ -21,26 +23,9 @@
                ┃┫┫ ┃┫┫
                ┗┻┛ ┗┻┛
 """
-# 为线程定义一个函数
-import _thread
-import time
+import pytesseract
+from PIL import Image
 
 
-def print_time(thread_name, delay):
-    count = 0
-    while count < 5:
-        time.sleep(delay)
-        count += 1
-        print("%s: %s" % (thread_name, time.ctime(time.time())))
-
-
-# 创建两个线程
-try:
-    _thread.start_new_thread(print_time, ("Thread-1", 2,))
-    _thread.start_new_thread(print_time, ("Thread-2", 4,))
-except Exception as e:
-    print("Error: unable to start thread")
-    print(e)
-
-while 1:
-    pass
+text = pytesseract.image_to_string(Image.open('1.png'), lang='chi_sim')
+print(text)
