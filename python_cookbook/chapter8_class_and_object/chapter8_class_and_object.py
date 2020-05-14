@@ -157,35 +157,116 @@ c = C()
 print('但下划线的内容，会被子类覆盖；\n'
       '而双下划线的内容是一个新内容 B.__private_method  和 C.__private_method ')
 
-print('\n'
-      '定义属性，访问与修改')
+print('\n8.7 调用父类方法')
+print('在子类中调用父类的某个已经被覆盖的方法')
+print('使用 super \n')
+
+
+class AA():
+    def spam(self):
+        print('A.spam')
+
+
+class BB(AA):
+    def spam(self):
+        print('B spam')
+        super().spam()
+
+
+print('打印 B 和 父类 A 的spam内容')
+print(BB().spam())
+
+print(BB.mro())
+
+print('问题：输出的结果为 B.spam A.spam None')
+print("查看 mro 路径可以得出结论，mro [<class '__main__.BB'>, <class '__main__.AA'>, <class 'object'>]")
+print("python 会从左到右自动获取第一个能匹配该方法 spam 的类，这里第一个类，是原始类 object，它没有spam方法")
+
+print('\t super() 函数两个常见用法：\n'
+      '一、用于 __init__() 方法，确保父类中的初始化内容被正确执行\n'
+      '二、用于在不同情况下区别使用子类和父类的不同实现方式')
+
+
+class AAA:
+    def __init__(self):
+        self.x = 0
+
+
+class BBB(AAA):
+    def __init__(self):
+        super(BBB, self).__init__()
+        self.y = 1
+
+
+print('这里会使出 BBB 和 父类 AAA 中定义的两个属性:')
+bbb = BBB()
+print(f'x: {bbb.x}, y: {bbb.y}')
+
+
+class Proxy:
+    def __init__(self, obj):
+        self._obj = obj
+
+    def __getattr__(self, name):
+        return getattr(self._obj, name)
+
+    def __setattr__(self, name, value):
+        if name.startswith('_'):
+            super(Proxy, self).__setattr__(name, value)
+        else:
+            setattr(self._obj, name, value)
+
+
+print('如果名称以下划线开头，则使用原始的 setattr() 方法，否则就委派给 _obj 去处理')
+
+print('>> 扩展：')
+print('由于super() 可能会调用不是你想用的方法，你应该遵循一些通用原则')
+print('一、确保在继承体系中所有 相同名字的方法 都拥有 可兼容的参数签名（比如相同的参数个数和参数名称）')
+print('\t这样如果 super() 调用了一个非直接父类方法时不会出错')
+print('二、确保所有顶层提供了这个方法的实现')
+print('\t这样在 MRO 上查找链肯定可以找到某个确定的方法')
+print('\n在定义混入类的时候使用 super() 非常普遍')
+
+print('\n8.8 子类扩展父类中的 property 功能')
 
 
 class Person:
-    def __init__(self, first_name):
-        self.first_name = first_name
+    def __init__(self, name):
+        self.name = name
 
     @property
-    def first_name(self):
-        return self._first_name
+    def name(self):
+        return self._name
 
-    @first_name.setter
-    def first_name(self, value):
+    @name.setter
+    def name(self, value):
         if not isinstance(value, str):
-            raise TypeError('需要一个 string')
-        self._first_name = value
+            raise TypeError('Except a string')
+        self._name = value
 
-    @first_name.deleter
-    def first_name(self):
-        raise AttributeError("不能删除属性")
+    @name.deleter
+    def name(self):
+        raise AttributeError("Can't delete attribute")
 
 
-p = Person('montou')
-print(p.first_name)
-try:
-    p.first_name = 'a'
-    del p.first_name
-except Exception as e:
-    print(e)
-print(Person.first_name.fget)
-print(Person.first_name.fset)
+class SubPerson(Person):
+    @property
+    def name(self):
+        print('Getting name')
+        return super(SubPerson, self).name
+
+    @name.setter
+    def name(self, value):
+        print('Setting name to', value)
+        super(SubPerson, self).name.__set__(self, value)
+
+    @name.deleter
+    def name(self):
+        print('Deleting name')
+        super(SubPerson, self).name.__delete__()
+
+
+s = SubPerson('Guido')
+print(s.name)
+s.name = 'Larry'
+print(s.name)

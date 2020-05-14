@@ -122,16 +122,19 @@ def format_user_info(json_data):
     with_fusion_shop_entry = user.get('with_fusion_shop_entry')  # 是否有商品橱窗
     if with_fusion_shop_entry is not None:
         with_fusion_shop_entry = int(with_fusion_shop_entry)
-    user_url = user['share_info']['share_url']  # 用户详情链接
-    user_qr_code_url = user['share_info']['share_qrcode_url']['url_list']
-    if len(user_qr_code_url) > 0:
-        user_qr_code_url = user_qr_code_url[0]
+    custom_verify = user.get('custom_verify')  # 自定义认证
+    enterprise_verify_reason = user.get('enterprise_verify_reason')  # 官方认证
+
+    # user_url = user['share_info']['share_url']  # 用户详情链接
+    # user_qr_code_url = user['share_info']['share_qrcode_url']['url_list']
+    # if len(user_qr_code_url) > 0:
+    #     user_qr_code_url = user_qr_code_url[0]
 
     user_dict = {'素人id': uid, '': unique_id, '获赞量': total_favorited, '关注量': following_count, '作品数': aweme_count,
                  '动态数': dongtai_count, '粉丝量': follower_count, '喜欢量': favoriting_count, '绑定手机': bind_phone,
                  '签名': signature, '昵称': nickname, '年龄': age, '性别': gender, '城市': city, '大学': school_name,
-                 '是否有商品橱窗': with_fusion_shop_entry,
-                 '用户详情链接': user_url, '用户详情二维码链接': user_qr_code_url}
+                 '是否有商品橱窗': with_fusion_shop_entry, '黄标': custom_verify, '蓝标': enterprise_verify_reason,
+                 '用户详情链接': None, '用户详情二维码链接': None}
     logger.info('用户信息-提取内容')
     logger.info(user_dict)
     yield user_dict
@@ -226,7 +229,7 @@ def handle_file(files):
                     # promotion_insert_args = [list(item.values()).insert(1, user_id) for item in new_promotion_infos]
                     logger.info(f'新增的商品:{[item[0] for item in promotion_insert_args]}')
                     # 批量插入数据
-                    promotion_insert_sql = """REPLACE INTO douyin_promotion
+                    promotion_insert_sql = """REPLACE INTO douyin_promotion2
         (promotion_id, suren_id, title, sales, visitor_count, price, goods_source, 
         coupon_real_price, elastic_title, elastic_type,
          aweme_id, coupon_link, detail_url, count, update_time)
@@ -255,21 +258,28 @@ def handle_file(files):
                         logger.error(f'文件当前行 {file_name} 参数不合法，请检查: {line}')
                         continue
                     suren_infos = list(format_user_info(line))
+                    if suren_infos is None or len(suren_infos) < 1:
+                        logger.error('从文件获取用户失败')
+                        continue
 
-                    # suren_ids = [item['素人id'] for item in suren_infos]
-                    # 以天为日期查询，如果该素人数据在当天已经更新过，则不存入数据库
-                    # suren_query = 'SELECT * FROM douyin_user WHERE suren_id = %s AND DATEDIFF(update_time, NOW()) = 0'
-                    # cursor.executemany(query=suren_query, args=suren_ids)
-                    # result = cursor.fetchall()
-                    # if len(result) > 0:
-                    #     logger.warn(F'素人 {suren_infos[0]["素人id"]} 已经在今天录入了')
-                    # continue # todo: 需要修改
+                    suren_info = suren_infos[0]
+
+                    suren_id = suren_info.get('素人id')
+                    # 如果该素人数据已经存在，则不存入数据库
+                    # 后期可以改为新增 create_time
+                    suren_query = 'SELECT * FROM douyin_user WHERE suren_id = %s '
+                    cursor.execute(query=suren_query, args=suren_id)
+                    result = cursor.fetchone()
+                    if result is not None:
+                        logger.error('用户不是新用户')
+                        continue
                     insert_args = [list(suren_info.values()) for suren_info in suren_infos]
                     # 如果没有当天的数据则存入/更新数据库
                     suren_insert = """REPLACE INTO douyin_user
                 (suren_id, douyin_id,total_favourited, following_count, aweme_count, dongtai_count, follower_count,
-                 favouriting_count, bind_phone, signature, nickname, age, gender, city, college, has_promotion, url, qrcode_url, update_time)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                 favouriting_count, bind_phone, signature, nickname, age, gender, city, college, has_promotion, 
+                 custom_verify, enterprise_verify_reason, url, qrcode_url, update_time)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     try:
                         cursor.executemany(query=suren_insert, args=insert_args)
                         conn.commit()
@@ -295,7 +305,7 @@ def handle_file(files):
                     new_aweme_args = [list(item.values()) for item in aweme_infos]  # todo 需要删除
                     # new_aweme_args = [list(item.values()) for item in new_aweme_infos]
                     logger.info(f'本次录入的新作品，id： {[item[0] for item in new_aweme_args]}')
-                    aweme_insert_sql = """REPLACE INTO douyin_aweme
+                    aweme_insert_sql = """REPLACE INTO douyin_aweme2
         (aweme_id, suren_id, digg_count, comment_count, share_count, download_count,
          forward_count, promotion_id, product_id, tag, description, create_time, update_time)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
@@ -319,9 +329,9 @@ def extract():
     clean_dir(base_dir)
     clean_dir(source_base_dir)
 
+
 if __name__ == '__main__':
     extract()
-
 
 # # todo: 不知道能不能做去重，先清空数据再说
 # def clean():
