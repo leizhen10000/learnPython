@@ -30,7 +30,7 @@ class ReadAndWriteFile(object):
     def read_file(self):
         f = open(self._file_abs, "r")
         try:
-            print f.read().decode("gbk")
+            print(f.read().decode("gbk"))
         finally:
             if f:
                 f.close()
@@ -39,7 +39,7 @@ class ReadAndWriteFile(object):
         with open(self._file_abs, "r") as f:
             poetry_list = f.readlines()
         for i in poetry_list:
-            print i.decode("gbk")
+            print(i.decode("gbk"))
 
     def write_file(self):
         with open(self._file_abs, "a") as f:

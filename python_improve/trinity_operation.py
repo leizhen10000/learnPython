@@ -8,7 +8,7 @@
 def trinity_operation():
     is_fat = True
     state = "fat" if is_fat else "not fat"
-    print state
+    print(state)
 
 
 if __name__ == '__main__':

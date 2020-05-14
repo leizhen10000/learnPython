@@ -57,7 +57,6 @@ def reduce_method():
 
 
 if __name__ == '__main__':
-    print
     map_list()
     filter_method()
     reduce_method()

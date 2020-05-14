@@ -37,7 +37,7 @@ def re_in_python():
 
     # 3. 使用 Match 获取分组信息
     if match:
-        print match.group()
+        print(match.group())
 
 
 if __name__ == '__main__':
