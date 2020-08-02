@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-# @Time    : 2018/4/8 14:04
+# @Time    : 2020/8/1 08:51
 # @Author  : Lei Zhen
 # @Contract: leizhen8080@gmail.com
-# @File    : using_thread.py
+# @File    : using_coroutine.py
 # @Software: PyCharm
 # code is far away from bugs with the god animal protecting
     I love animals. They taste delicious.
@@ -21,27 +21,22 @@
                ┃┫┫ ┃┫┫
                ┗┻┛ ┗┻┛
 """
-# 为线程定义一个函数
-import _thread
-import time
 
 
-def print_time(thread_name, delay):
-    count = 0
-    while count < 5:
-        time.sleep(delay)
-        count += 1
-        print("%s: %s count: %d" %
-              (thread_name, time.ctime(time.time()), count))
+# 协程不被操作系统内核管理，而是由程序完全控制
+# 不需要多线程的锁机制，只有一个线程不存在变量冲突
+# 对于多核 CPU，利用多线程+协程的方式，能充分利用 CPU，获得极高的性能
+
+# yield 相当于暂停功能，程序运行到 yield 停止
+# send 可以传参给生成器函数，参数赋值给 yield
+def customer():
+    while True:
+        number = yield
+        print("开始消费", number)
 
 
-# 创建两个线程
-try:
-    _thread.start_new_thread(print_time, ("Thread-1", 2,))
-    _thread.start_new_thread(print_time, ("Thread-2", 4,))
-except Exception as e:
-    print("Error: unable to start thread")
-    print(e)
-
-while 1:
-    pass
+c = customer()
+next(c)
+for i in range(4):
+    print('开始生产', i)
+    c.send(i)

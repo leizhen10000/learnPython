@@ -25,6 +25,8 @@ import threading
 
 # 实现线程间的通信
 
+# 使一个线程等待其他线程的通知
+
 # 内置标志，初始值为 False
 import time
 

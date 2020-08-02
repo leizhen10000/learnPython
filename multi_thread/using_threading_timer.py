@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-# @Time    : 2018/4/8 14:04
+# @Time    : 2020/8/2 10:06
 # @Author  : Lei Zhen
 # @Contract: leizhen8080@gmail.com
-# @File    : using_thread.py
+# @File    : using_threading_timer.py
 # @Software: PyCharm
 # code is far away from bugs with the god animal protecting
     I love animals. They taste delicious.
@@ -21,27 +21,26 @@
                ┃┫┫ ┃┫┫
                ┗┻┛ ┗┻┛
 """
-# 为线程定义一个函数
-import _thread
+import threading
 import time
 
 
-def print_time(thread_name, delay):
-    count = 0
-    while count < 5:
-        time.sleep(delay)
-        count += 1
-        print("%s: %s count: %d" %
-              (thread_name, time.ctime(time.time()), count))
+def func(num):
+    print(f'hello {num} timer!')
 
 
-# 创建两个线程
-try:
-    _thread.start_new_thread(print_time, ("Thread-1", 2,))
-    _thread.start_new_thread(print_time, ("Thread-2", 4,))
-except Exception as e:
-    print("Error: unable to start thread")
-    print(e)
+timer = threading.Timer(1.5, func, (1,))
+time_0 = time.time()
+timer.start()
+timer.join()
+print(time.time() - time_0)
 
-while 1:
-    pass
+timer2 = threading.Timer(3, func, (2,))
+timer2.start()
+time.sleep(2)
+if timer2.is_alive():
+    # 如果 2s 后还存活，则取消 timer2 的执行
+    timer2.cancel()
+
+print(timer.is_alive())
+print(timer2.is_alive())
